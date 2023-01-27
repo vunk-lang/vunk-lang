@@ -449,6 +449,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "vunk-vm"
+version = "0.1.0"
+dependencies = [
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "wasi"
 version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
