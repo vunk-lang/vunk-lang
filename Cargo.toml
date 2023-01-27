@@ -1,0 +1,33 @@
+[workspace]
+resolver = "2"
+members = [
+    "vunk-parser"
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = [
+    "Matthias Beyer"
+]
+
+[workspace.dependencies]
+tokio = "1"
+tracing = "0.1"
+
+
+[package]
+name = "vunk"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tracing.workspace = true
+
+miette = { version = "5.5", features = ["fancy"] }
+
+[[bin]]
+name = "vunk"
+

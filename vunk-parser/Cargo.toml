@@ -1,0 +1,10 @@
+[package]
+name = "vunk-parser"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+
+[dependencies]
+tokio = { workspace = true, features = ["fs"] }
+tracing.workspace = true
+
