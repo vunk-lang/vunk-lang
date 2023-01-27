@@ -1,0 +1,5 @@
+main = (args: Std.Args) ->
+    Std.IO.println $
+    Std.String.join ", " $
+    Std.Iter.Iterator.map Std.String.toUpper args
+
