@@ -441,6 +441,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "vunk-ast"
+version = "0.1.0"
+
+[[package]]
 name = "vunk-parser"
 version = "0.1.0"
 dependencies = [
