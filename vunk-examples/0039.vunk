@@ -1,0 +1,39 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+type Person =
+    { name: String
+    , age: u8
+    }
+
+type Animal =
+    { name: String
+    , age: u8
+    }
+
+trait Ageing =
+    { ageing: (Person) -> Person
+    }
+
+impl Ageing on Person =
+    { ageing: (Person) -> Person
+      ageing = (Person { name, age }) -> Person { name, age: age + 1 }
+    }
+
+impl Ageing on Aninmal =
+    { ageing: (Animal) -> Animal
+      ageing = (Animal { name, age }) -> Animal { name, age: age + 1 }
+    }
+
+grow_old: (A) -> A
+    where A: Ageing
+grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a)
+
+
+old_person: Person
+old_person = grow_old (Person { name: "Jon", age: 22 })
+
+old_cat: Animal
+old_cat = grow_old (Animal { name: "Billy", age: 2 })
+
