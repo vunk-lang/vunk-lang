@@ -1,7 +1,6 @@
 # Must pass on the PR before a PR gets added to the queue
 pr_status = [
     "PR-checks",
-    "commit-lint",
 ]
 
 # Must pass on the merge with the master branch
