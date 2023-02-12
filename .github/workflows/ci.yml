@@ -72,3 +72,19 @@ jobs:
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - run: nix --extra-experimental-features "nix-command flakes" develop -c echo shell built
 
+
+  # We need some "accummulation" job here because bors fails (timeouts) to
+  # listen on matrix builds.
+  # Hence, we have some kind of dummy here that bors can listen on
+  ci-success:
+    name: CI
+    if: ${{ success() }}
+    needs:
+      - check
+      - test
+      - nix-build
+      - nix-shell
+    runs-on: ubuntu-latest
+    steps:
+      - name: CI succeeded
+        run: exit 0
