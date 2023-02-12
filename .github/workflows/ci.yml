@@ -1,8 +1,10 @@
 name: CI
 
 on:
+  push:
+    branches: [master, staging, trying]
   pull_request:
-  merge_group:
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
@@ -28,6 +30,7 @@ jobs:
 
   test:
     name: test
+    needs: check
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -72,3 +75,48 @@ jobs:
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - run: nix --extra-experimental-features "nix-command flakes" develop -c echo shell built
 
+  fmt:
+    name: format
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.67.0
+          components: rustfmt
+      - run: rustup component add rustfmt
+      - name: cargo-fmt
+        run: cargo fmt -- --check
+
+  clippy:
+    name: clippy
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.67.0
+          components: clippy
+      - uses: swatinem/rust-cache@v2
+      - name: cargo-clippy
+        run: cargo clippy --all --all-targets --all-features
+
+  # We need some "accummulation" job here because bors fails (timeouts) to
+  # listen on matrix builds.
+  # Hence, we have some kind of dummy here that bors can listen on
+  ci-success:
+    name: CI
+    if: ${{ success() }}
+    needs:
+      - check
+      - test
+      - nix-build
+      - nix-shell
+      - clippy
+      - fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: CI succeeded
+        run: exit 0
