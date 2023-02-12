@@ -1,0 +1,12 @@
+[package]
+name = "vunk-lexer"
+authors.workspace = true
+edition.workspace = true
+version.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tracing.workspace = true
+
+chumsky = "0.9.0"
