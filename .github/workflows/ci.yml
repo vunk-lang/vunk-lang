@@ -103,6 +103,13 @@ jobs:
       - name: cargo-clippy
         run: cargo clippy --all --all-targets --all-features
 
+  license:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.3.0
+      - name: Check License Lines
+        uses: kt3k/license_checker@v1.0.6
+
   # We need some "accummulation" job here because bors fails (timeouts) to
   # listen on matrix builds.
   # Hence, we have some kind of dummy here that bors can listen on
@@ -116,6 +123,7 @@ jobs:
       - nix-shell
       - clippy
       - fmt
+      - license
     runs-on: ubuntu-latest
     steps:
       - name: CI succeeded

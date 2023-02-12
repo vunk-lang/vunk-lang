@@ -3,6 +3,7 @@ name = "vunk-parser"
 authors.workspace = true
 edition.workspace = true
 version.workspace = true
+license.workspace = true
 
 [dependencies]
 tokio = { workspace = true, features = ["fs"] }
