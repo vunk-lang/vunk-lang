@@ -1,0 +1,16 @@
+#[test]
+fn {name}() {{
+    let code = include_str!("{path}");
+
+    let lexer = vunk_lexer::lexer();
+    let (tokens, errs) = lexer.parse_recovery(code);
+    assert!(
+        errs.is_empty(),
+        "Tokens: {{:?}}, Errors: {{}}",
+        tokens,
+        errs.into_iter()
+            .map(|e| format!("{{}}", e))
+            .collect::<Vec<_>>()
+            .join("\n"),
+    );
+}}
