@@ -1,0 +1,31 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Same as 0033, but with interfaces in mapper function and no types in the
+# argument list and partial function application
+
+use Std.Args
+use Std.Env
+use Std.IO.println
+use Std.Iter.Iterator
+use Std.Iter.Iterator.map
+use Std.String
+
+main = (args: Args, env: Env) ->
+    let
+        iter_args: Iterator String
+        iter_args = map String.toUpper args
+
+        env_pair_to_str: (dyn ToString, dyn ToString) -> String
+        env_pair_to_str = Std.String.format "{}={}"
+
+        iter_env: Iterator String
+        iter_env = map env_pair_to_str env
+
+        chained: Iterator String
+        chained = chain iter_args iter_env
+    in
+    println chained
+
+
