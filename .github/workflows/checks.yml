@@ -1,0 +1,36 @@
+name: Checks
+
+on:
+  push:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fmt:
+    name: format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.67.0
+          components: rustfmt
+      - run: rustup component add rustfmt
+      - name: cargo-fmt
+        run: cargo fmt -- --check
+
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.67.0
+          components: clippy
+      - uses: swatinem/rust-cache@v2
+      - name: cargo-clippy
+        run: cargo clippy --all --all-targets --all-features
+
+
