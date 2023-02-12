@@ -31,6 +31,9 @@ pub enum Token {
 
     Bool(bool),
 
+    Use,
+    Seperator,
+
     Comment(String),
 }
 
@@ -53,6 +56,8 @@ impl std::fmt::Display for Token {
             Num(n) => write!(f, "{}", n),
             Str(s) => write!(f, "{}", s),
             Op(chr) => write!(f, "{}", chr),
+            Use => write!(f, "use"),
+            Seperator => write!(f, "."),
         }
     }
 }
@@ -77,19 +82,23 @@ pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
 
     let assign = just("=").map(|_| Token::Assign);
     let declare = just(":").map(|_| Token::Declare);
+    let seperator = just(".").map(|_| Token::Seperator);
+    let kw_use = just("use").map(|_| Token::Use);
     let kw_arrow = just("->").map(|_| Token::Arrow);
     let kw_let = just("let").map(|_| Token::Let);
     let kw_if = just("if").map(|_| Token::If);
     let kw_else = just("else").map(|_| Token::Else);
     let kw_true = just("true").map(|_| Token::Bool(true));
     let kw_false = just("false").map(|_| Token::Bool(false));
-    let ident = text::ident().map(|ident: String| Token::Ident(ident));
+    let ident = ident().map(|ident: String| Token::Ident(ident));
 
     // A single token can be one of the above
     let token = num
         .or(str_)
         .or(assign)
         .or(declare)
+        .or(seperator)
+        .or(kw_use)
         .or(kw_arrow)
         .or(kw_let)
         .or(kw_if)
@@ -108,4 +117,21 @@ pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
         .padded_by(comment.repeated())
         .padded()
         .repeated()
+}
+
+fn ident<C: text::Character, E: chumsky::Error<C>>(
+) -> impl Parser<C, C::Collection, Error = E> + Copy + Clone {
+    filter(|c: &C| {
+        let chr = c.to_char();
+        chr.is_ascii_alphabetic() || chr == '_' || chr == '$'
+    })
+    .map(Some)
+    .chain::<C, Vec<_>, _>(
+        filter(|c: &C| {
+            let chr = c.to_char();
+            chr.is_ascii_alphanumeric() || c.to_char() == '_'
+        })
+        .repeated(),
+    )
+    .collect()
 }
