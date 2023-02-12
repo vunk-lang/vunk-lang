@@ -1,0 +1,28 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+use Std.Args
+use Std.Env
+use Std.IO.println
+use Std.Iter.Iterator
+use Std.Iter.Iterator.map
+use Std.String
+
+main = (args: Args, env: Env) ->
+    let
+        iter_args: Iterator String
+        iter_args = map String.toUpper args
+
+        env_pair_to_str: (String, String) -> String
+        env_pair_to_str = (key: String, val: String) ->
+            Std.String.format "{}={}" key val
+
+        iter_env: Iterator String
+        iter_env = map env_pair_to_str env
+
+        chained: Iterator String
+        chained = chain iter_args iter_env
+    in
+    println chained
+
