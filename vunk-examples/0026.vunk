@@ -1,0 +1,10 @@
+use Std.$
+use Std.Args
+use Std.IO.println
+use Std.Iter.Iterator.map
+use Std.String.join
+use Std.String.toUpper
+
+main = (args: Args) ->
+    println $ join ", " $ map (e: toUpper e) args
+

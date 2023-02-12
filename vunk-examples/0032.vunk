@@ -1,0 +1,13 @@
+use Std.Args
+use Std.IO.println
+use Std.Iter.Iterator
+use Std.Iter.Iterator.map
+use Std.String
+
+main = (args: Args) ->
+    let
+        iter: Iterator String
+        iter = map String.toUpper args
+    in
+    println iter
+
