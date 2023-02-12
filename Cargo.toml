@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "vunk-ast",
+    "vunk-lexer",
     "vunk-parser",
     "vunk-vm",
 ]
