@@ -42,7 +42,6 @@ jobs:
     if: ${{ success() }}
     needs:
       - clippy
-      - deny
       - fmt
     runs-on: ubuntu-latest
     steps:
