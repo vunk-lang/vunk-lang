@@ -1,4 +1,4 @@
 #[derive(Debug)]
 pub struct Type {
-    pub name: String
+    pub name: String,
 }

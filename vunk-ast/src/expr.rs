@@ -1,6 +1,6 @@
-use crate::literal::Literal;
-use crate::function::FunctionName;
 use crate::function::FunctionDef;
+use crate::function::FunctionName;
+use crate::literal::Literal;
 
 #[derive(Debug)]
 pub enum Expr {
@@ -10,5 +10,4 @@ pub enum Expr {
         fname: FunctionName,
         fargs: Vec<Expr>,
     },
-
 }
