@@ -4,7 +4,6 @@ members = [
     "vunk-ast",
     "vunk-lexer",
     "vunk-parser",
-    "vunk-vm",
 ]
 
 [workspace.package]
