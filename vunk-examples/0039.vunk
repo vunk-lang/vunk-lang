@@ -13,7 +13,7 @@ type Animal =
     }
 
 trait Ageing =
-    { ageing: (Person) -> Person
+    { ageing: (Self) -> Self
     }
 
 impl Ageing on Person =
