@@ -1,0 +1,84 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+type Person =
+    { name: String
+    , age: Age
+    }
+
+type Animal =
+    { name: String
+    , age: Age
+    }
+
+enum Height =
+    Small
+    | Medium
+    | Tall
+
+enum Age =
+    Value { age: u8 }
+    | Unknown
+
+trait Ageing =
+    { ageing: (Self) -> Self
+    }
+
+impl Ageing on Person =
+    { ageing: (Person) -> Person
+      ageing = (Person { name, age }) -> let
+          newage = match age
+            when Age.Value { age } -> Value { age: age + 1 }
+            when Age.Unknown -> Age.Unknown
+        in Person { name, age: newage }
+    }
+
+impl Ageing on Aninmal =
+    { ageing: (Animal) -> Animal
+      ageing = (Animal { name, age }) -> let
+          newage = match age
+            when Age.Value { age } -> Value { age: age + 1 }
+            else Age.Unknown
+        in Animal { name, age: newage }
+    }
+
+
+trait Printable =
+  { toString: (self: Self) -> String
+  }
+
+impl Printable on Person =
+  { toString: (self: Self) -> String
+    toString = (self) -> let
+        name = self.name
+        age = match self.age
+          when Value { age } -> String.from age
+          else "very"
+      in String.fmt "{} is {} old" [name age]
+
+
+impl Printable on Animal =
+  { toString: (self: Self) -> String
+    toString = (self) -> let
+        name = self.name
+        age = match self.age
+          when Value { age } -> String.from age
+          else "a bit"
+      in String.fmt "{} is {} old" [name age]
+
+
+grow_old: (A) -> A
+    where A: Ageing
+grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a)
+
+
+old_person: Person
+old_person = grow_old (Person { name: "Jon", age: (Age.Value { age: 22 }) })
+
+old_cat: Animal
+old_cat = grow_old $ Animal { name: "Billy", age: Age.Unknown }
+
+main = () ->
+  println $ String.concat $ map Printable.toString [old_person old_cat]
+
