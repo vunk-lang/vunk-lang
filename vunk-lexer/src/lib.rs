@@ -35,6 +35,7 @@ pub enum Token {
 
     BlockOpen,
     BlockClose,
+    Alternative,
     Where,
 
     Bool(bool),
@@ -68,6 +69,7 @@ impl std::fmt::Display for Token {
             Seperator => write!(f, "."),
             BlockOpen => write!(f, "{{"),
             BlockClose => write!(f, "}}"),
+            Alternative => write!(f, "|"),
             Where => write!(f, "where"),
         }
     }
@@ -105,6 +107,7 @@ pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
     let kw_where = just("where").map(|_| Token::Where);
     let blockopen = just("{").map(|_| Token::BlockOpen);
     let blockclose = just("}").map(|_| Token::BlockClose);
+    let alternative = just("|").map(|_| Token::Alternative);
     let ident = ident().map(|ident: String| Token::Ident(ident));
 
     // A single token can be one of the above
@@ -124,6 +127,7 @@ pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
         .or(kw_where)
         .or(blockopen)
         .or(blockclose)
+        .or(alternative)
         .or(ctrl)
         .or(operator)
         .or(ident)
