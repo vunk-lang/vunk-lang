@@ -35,7 +35,12 @@ pub enum Token {
 
     BlockOpen,
     BlockClose,
+    Alternative,
     Where,
+    Match,
+    When,
+    ListOpen,
+    ListClose,
 
     Bool(bool),
 
@@ -68,7 +73,12 @@ impl std::fmt::Display for Token {
             Seperator => write!(f, "."),
             BlockOpen => write!(f, "{{"),
             BlockClose => write!(f, "}}"),
+            ListOpen => write!(f, "["),
+            ListClose => write!(f, "]"),
+            Alternative => write!(f, "|"),
             Where => write!(f, "where"),
+            Match => write!(f, "match"),
+            When => write!(f, "when"),
         }
     }
 }
@@ -103,8 +113,13 @@ pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
     let kw_true = just("true").map(|_| Token::Bool(true));
     let kw_false = just("false").map(|_| Token::Bool(false));
     let kw_where = just("where").map(|_| Token::Where);
+    let kw_match = just("match").map(|_| Token::Match);
+    let kw_when = just("when").map(|_| Token::When);
     let blockopen = just("{").map(|_| Token::BlockOpen);
     let blockclose = just("}").map(|_| Token::BlockClose);
+    let listopen = just("[").map(|_| Token::ListOpen);
+    let listclose = just("]").map(|_| Token::ListClose);
+    let alternative = just("|").map(|_| Token::Alternative);
     let ident = ident().map(|ident: String| Token::Ident(ident));
 
     // A single token can be one of the above
@@ -122,8 +137,13 @@ pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
         .or(kw_true)
         .or(kw_false)
         .or(kw_where)
+        .or(kw_match)
+        .or(kw_when)
         .or(blockopen)
         .or(blockclose)
+        .or(listopen)
+        .or(listclose)
+        .or(alternative)
         .or(ctrl)
         .or(operator)
         .or(ident)
