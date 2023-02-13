@@ -97,6 +97,7 @@ pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
     let kw_use = just("use").map(|_| Token::Use);
     let kw_arrow = just("->").map(|_| Token::Arrow);
     let kw_let = just("let").map(|_| Token::Let);
+    let kw_in = just("in").map(|_| Token::In);
     let kw_if = just("if").map(|_| Token::If);
     let kw_else = just("else").map(|_| Token::Else);
     let kw_true = just("true").map(|_| Token::Bool(true));
@@ -115,6 +116,7 @@ pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
         .or(kw_use)
         .or(kw_arrow)
         .or(kw_let)
+        .or(kw_in)
         .or(kw_if)
         .or(kw_else)
         .or(kw_true)
