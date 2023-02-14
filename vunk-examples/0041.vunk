@@ -1,0 +1,135 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Define a type "Person"
+type Person =
+    { # The name of the Person
+      name: String
+    , # The age of the Person
+      age: Age
+    }
+
+# Define a type "Animal"
+type Animal =
+    { name: String # the name of the Animal
+    , age: Age # the age of the Animal
+    }
+
+# Define an enum "Height"
+enum Height =
+    # which is either Small
+    Small
+    | # Or "Medium"
+      Medium
+    | # Or "Tall"
+      Tall
+
+# Define an enum "Age"
+enum Age =
+    Value { # Either a Value
+        age: u8 # with a field "age" of type "u8"
+    }
+    | Unknown # or unknown
+
+# Define a trait "Ageing"
+trait Ageing =
+    { # With only one function, that takes an object of an implementing type
+      # and returns the same type of object
+      ageing: (Self) -> Self
+    }
+
+
+impl Ageing on Person = # and now lets implement that trait on the "Person" type
+    { ageing: (Person) -> Person # the function takes and returns "Person"
+      # objects of course
+      # That type declaration is not necessary, but nice to be able to grep for
+
+      # Now lets implement that function.
+      # The parameter can directly be destructured into its members
+      ageing = (Person { name, age }) -> let # we use a let..in to simplify the implementation
+          newage = match age # we match the "age" field, which is an enum
+            # And when the Age object is a `Age.Value`, we destructure object
+            # And construct a new one of it, with the age increased
+            when Age.Value { age } -> Value { age: age + 1 }
+            # When the Age is `Age.Unknown`, we leave it at that
+            when Age.Unknown -> Age.Unknown
+        # And with that `newage`, we construct a new `Person` object
+        in Person { name, age: newage }
+    }
+
+
+# And now again on the `Animal` type
+impl Ageing on Animal =
+    { ageing: (Animal) -> Animal
+      ageing = (Animal { name, age }) -> let
+          newage = match age
+            when Age.Value { age } -> Value { age: age + 1 }
+            # ... but here we use `else` in the match, because we know that `Age` will
+            # never have more variants than `Value` and `Unknown`
+            else Age.Unknown
+        in Animal { name, age: newage }
+    }
+
+
+# Lets have another trait
+trait Printable =
+  { toString: (self: Self) -> String # which takes an object of the implementor
+    # (note that the `self:` part above is not necessary
+  }
+
+# ... and implement that on Person
+impl Printable on Person =
+  { toString: (self: Self) -> String # optional, but nice to have
+    toString = (self) -> let
+        name = self.name
+        age = match self.age
+          when Value { age } -> String.from age
+          else "very"
+      in
+        # In the implementation, we call `String.fmt` from the stdlib to do string interpolation.
+        # The function takes a format str and an array or map of elements to interpolate.
+        # Maybe this will be changed.
+        String.fmt "{} is {} old" [name age]
+
+
+# And again on Animal
+impl Printable on Animal =
+  { toString: (self: Self) -> String
+    toString = (self) -> let
+        name = self.name
+        age = match self.age
+          when Value { age } -> String.from age
+          else "a bit"
+      in String.fmt "{} is {} old" [name age]
+
+
+# Now lets have a generic function that goes from an instance of type "A" to another instance of
+# type "A", where "A" implements the "Ageing" trait
+#
+# When implementing generic functions, the signature is required.
+# When implementing non-generic functions, the signature will be inferred from the implementation
+grow_old: (A) -> A
+    where A: Ageing
+grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a)
+
+
+# Now lets define a variable "old_person" of type "Person" which is implemented by calling
+# `grow_old` on a new instance of `Person`
+old_person: Person
+old_person = grow_old (Person { name: "Jon", age: (Age.Value { age: 22 }) })
+
+# And the same for an animal
+old_cat: Animal
+old_cat = grow_old $ Animal { name: "Billy", age: Age.Unknown }
+
+# In the main function implementation (note that there's no declaration of types here), we
+# take no arguments and implement the function by calling `println` on a string that is
+# produced by `String.concat` on an array of `old_person` and `old_cat` that is
+# `Printable.toString` mapped over
+#
+# Not yet sure about the actual syntax here, because `main` has of course to be some IO thing (Monads, yay!)
+# and `println` comes from the stdlib of course...
+main = () ->
+  println $ String.concat $ map Printable.toString [old_person old_cat]
+
