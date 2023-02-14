@@ -34,7 +34,7 @@ impl Ageing on Person =
         in Person { name, age: newage }
     }
 
-impl Ageing on Aninmal =
+impl Ageing on Animal =
     { ageing: (Animal) -> Animal
       ageing = (Animal { name, age }) -> let
           newage = match age
