@@ -45,28 +45,29 @@ impl Ageing on Animal =
 
 
 trait Printable =
-  { toString: (self: Self) -> String
-  }
+    { toString: (self: Self) -> String
+    }
 
 impl Printable on Person =
-  { toString: (self: Self) -> String
-    toString = (self) -> let
-        name = self.name
-        age = match self.age
-          when Value { age } -> String.from age
-          else "very"
-      in String.fmt "{} is {} old" [name age]
+    { toString: (self: Self) -> String
+      toString = (self) -> let
+          name = self.name
+          age = match self.age
+            when Value { age } -> String.from age
+            else "very"
+        in String.fmt "{} is {} old" [name age]
+    }
 
 
 impl Printable on Animal =
-  { toString: (self: Self) -> String
-    toString = (self) -> let
-        name = self.name
-        age = match self.age
-          when Value { age } -> String.from age
-          else "a bit"
-      in String.fmt "{} is {} old" [name age]
-
+    { toString: (self: Self) -> String
+      toString = (self) -> let
+          name = self.name
+          age = match self.age
+            when Value { age } -> String.from age
+            else "a bit"
+        in String.fmt "{} is {} old" [name age]
+    }
 
 grow_old: (A) -> A
     where A: Ageing

@@ -74,34 +74,36 @@ impl Ageing on Animal =
 
 # Lets have another trait
 trait Printable =
-  { toString: (self: Self) -> String # which takes an object of the implementor
-    # (note that the `self:` part above is not necessary
-  }
+    { toString: (self: Self) -> String # which takes an object of the implementor
+      # (note that the `self:` part above is not necessary
+    }
 
 # ... and implement that on Person
 impl Printable on Person =
-  { toString: (self: Self) -> String # optional, but nice to have
-    toString = (self) -> let
-        name = self.name
-        age = match self.age
-          when Value { age } -> String.from age
-          else "very"
-      in
-        # In the implementation, we call `String.fmt` from the stdlib to do string interpolation.
-        # The function takes a format str and an array or map of elements to interpolate.
-        # Maybe this will be changed.
-        String.fmt "{} is {} old" [name age]
+    { toString: (self: Self) -> String # optional, but nice to have
+      toString = (self) -> let
+          name = self.name
+          age = match self.age
+            when Value { age } -> String.from age
+            else "very"
+        in
+          # In the implementation, we call `String.fmt` from the stdlib to do string interpolation.
+          # The function takes a format str and an array or map of elements to interpolate.
+          # Maybe this will be changed.
+          String.fmt "{} is {} old" [name age]
+    }
 
 
 # And again on Animal
 impl Printable on Animal =
-  { toString: (self: Self) -> String
-    toString = (self) -> let
-        name = self.name
-        age = match self.age
-          when Value { age } -> String.from age
-          else "a bit"
-      in String.fmt "{} is {} old" [name age]
+    { toString: (self: Self) -> String
+      toString = (self) -> let
+          name = self.name
+          age = match self.age
+            when Value { age } -> String.from age
+            else "a bit"
+        in String.fmt "{} is {} old" [name age]
+    }
 
 
 # Now lets have a generic function that goes from an instance of type "A" to another instance of
