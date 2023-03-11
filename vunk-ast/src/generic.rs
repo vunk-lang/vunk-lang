@@ -6,9 +6,11 @@ use crate::name::TraitName;
 use crate::name::TypeName;
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct WhereClause(pub Vec<TraitName>);
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Generic {
     pub type_name: TypeName,
     pub where_clause: WhereClause,

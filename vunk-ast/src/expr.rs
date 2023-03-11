@@ -13,6 +13,7 @@ use crate::op::BinaryOp;
 use crate::op::UnaryOp;
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub enum Expr {
     Variable(VariableName),
     Unary(UnaryOp, Box<Expr>),

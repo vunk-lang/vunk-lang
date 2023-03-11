@@ -3,10 +3,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct VariableName(pub String);
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct TypeName(pub String);
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct TraitName(pub String);

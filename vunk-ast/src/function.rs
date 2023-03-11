@@ -8,6 +8,7 @@ use crate::name::TypeName;
 use crate::name::VariableName;
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct FunctionDecl {
     pub name: FunctionName,
     pub generics: Vec<Generic>,
@@ -16,6 +17,7 @@ pub struct FunctionDecl {
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct FunctionDef {
     pub name: FunctionName,
     pub generics: Vec<Generic>,
@@ -24,17 +26,20 @@ pub struct FunctionDef {
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct FunctionCall {
     pub name: FunctionName,
     pub args: Vec<Expr>,
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct FunctionName {
     pub name: String,
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct FunctionArg {
     pub name: VariableName,
     pub ty: TypeName,

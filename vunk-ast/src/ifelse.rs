@@ -5,6 +5,7 @@
 use crate::expr::Expr;
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct IfElse {
     pub condition: Box<Expr>,
     pub tru: Box<Expr>,
