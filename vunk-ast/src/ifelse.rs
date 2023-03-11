@@ -2,8 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-pub enum Lit {
-    Ident(Ident),
-    Literal(
+use crate::expr::Expr;
 
+#[derive(Debug)]
+pub struct IfElse {
+    pub condition: Box<Expr>,
+    pub tru: Box<Expr>,
+    pub fals: Box<Expr>,
 }

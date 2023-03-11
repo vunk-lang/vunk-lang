@@ -8,6 +8,7 @@ pub enum Literal {
     Integer(Integer),
     Float(Float),
     Str(Str),
+    List(Vec<crate::expr::Expr>),
 }
 
 #[derive(Debug)]

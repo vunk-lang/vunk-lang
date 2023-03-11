@@ -2,12 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-pub mod expr;
-pub mod function;
-pub mod generic;
-pub mod ifelse;
-pub mod letin;
-pub mod literal;
-pub mod name;
-pub mod op;
-pub mod program;
+#[derive(Debug)]
+pub struct VariableName(pub String);
+
+#[derive(Debug)]
+pub struct TypeName(pub String);
+
+#[derive(Debug)]
+pub struct TraitName(pub String);
