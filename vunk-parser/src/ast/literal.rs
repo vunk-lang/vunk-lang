@@ -9,6 +9,8 @@ use chumsky::error::Simple;
 use chumsky::select;
 use chumsky::Parser;
 
+use crate::ast::expr::Expr;
+use crate::ast::name::VariableName;
 use vunk_lexer::Token;
 
 use crate::Spanned;
@@ -34,6 +36,7 @@ impl Literal {
             (Token::Str(s), span) => (Literal::Str(Str { value: s }), span),
             (Token::Bool(b), span) => (Literal::Bool(Bool { value: b }), span),
         }
+        .or(parse_list())
     }
 }
 
@@ -58,6 +61,47 @@ fn parse_num(num: String, span: &Range<usize>) -> Result<Spanned<Integer>, Simpl
         },
     })
     .map(|i| (i, span.clone()))
+}
+
+fn list_open_parser(
+) -> impl Parser<Spanned<Token>, Spanned<()>, Error = Simple<Spanned<Token>>> + Clone {
+    chumsky::select! {
+        (Token::Ctrl('['), span) => ((), span)
+    }
+}
+
+fn list_close_parser(
+) -> impl Parser<Spanned<Token>, Spanned<()>, Error = Simple<Spanned<Token>>> + Clone {
+    chumsky::select! {
+        (Token::Ctrl(']'), span) => ((), span)
+    }
+}
+
+fn parse_list(
+) -> impl Parser<Spanned<Token>, Spanned<Literal>, Error = Simple<Spanned<Token>>> + Clone {
+    let list_elements_parser = {
+        VariableName::parser()
+            .map_with_span(|(varname, _span), span| (Expr::Variable(varname), span))
+            .repeated()
+            .collect()
+            .map(|itms: Vec<(_, _)>| {
+                let start = itms.first().map(|f| f.1.start).unwrap_or(0);
+                let end = itms.iter().rev().next().map(|f| f.1.end).unwrap_or(0);
+
+                let mut items = Vec::with_capacity(itms.len());
+                for itm in itms.into_iter() {
+                    items.push(itm.0);
+                }
+
+                let span = std::ops::Range { start, end };
+
+                (Literal::List(items), span)
+            })
+    };
+
+    list_open_parser()
+        .ignore_then(list_elements_parser)
+        .then_ignore(list_close_parser())
 }
 
 #[derive(Debug)]
@@ -95,4 +139,26 @@ pub struct Float {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct Str {
     pub value: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ast::name::VariableName;
+
+    use super::*;
+
+    #[test]
+    fn test_parse_list() {
+        let parser = parse_list();
+        let tokens = vunk_lexer::lexer().parse("[ a ]").unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        assert!(matches!(parsed.0, Literal::List(_)));
+        if let Literal::List(list) = parsed.0 {
+            assert_eq!(list.len(), 1);
+            assert!(matches!(list[0], Expr::Variable(VariableName(_))));
+        } else {
+            unreachable!()
+        }
+    }
 }
