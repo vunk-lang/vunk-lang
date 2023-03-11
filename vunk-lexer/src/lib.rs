@@ -22,7 +22,7 @@ pub enum Token {
     Assign,
     Declare,
     Ctrl(char),
-    Op(char),
+    Op(String),
 
     Num(String),
     Str(String),
@@ -68,7 +68,7 @@ impl std::fmt::Display for Token {
             Let => write!(f, "let"),
             Num(n) => write!(f, "{}", n),
             Str(s) => write!(f, "{}", s),
-            Op(chr) => write!(f, "{}", chr),
+            Op(s) => write!(f, "{}", s),
             Use => write!(f, "use"),
             Seperator => write!(f, "."),
             BlockOpen => write!(f, "{{"),
@@ -99,7 +99,46 @@ pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
     // A parser for control characters (delimiters, semicolons, etc.)
     let ctrl = one_of("(),").map(|c| Token::Ctrl(c));
 
-    let operator = one_of("+-*/").map(|c| Token::Op(c));
+    let operator = {
+        let op_add = just('+').map(|c| Token::Op(c.to_string()));
+        let op_sub = just('-').map(|c| Token::Op(c.to_string()));
+        let op_mul = just('*').map(|c| Token::Op(c.to_string()));
+        let op_div = just('/').map(|c| Token::Op(c.to_string()));
+        let op_rem = just('%').map(|c| Token::Op(c.to_string()));
+        let op_eq = just("==").map(|c| Token::Op(c.to_string()));
+        let op_neq = just("!=").map(|c| Token::Op(c.to_string()));
+        let op_less = just('<').map(|c| Token::Op(c.to_string()));
+        let op_less_eq = just("<=").map(|c| Token::Op(c.to_string()));
+        let op_more = just('>').map(|c| Token::Op(c.to_string()));
+        let op_more_eq = just(">=").map(|c| Token::Op(c.to_string()));
+
+        let op_bit_and = just('&').map(|c| Token::Op(c.to_string()));
+        let op_logical_and = just("&&").map(|c| Token::Op(c.to_string()));
+        let op_bit_or = just('|').map(|c| Token::Op(c.to_string()));
+        let op_logical_or = just("||").map(|c| Token::Op(c.to_string()));
+
+        let op_bit_xor = just('^').map(|c| Token::Op(c.to_string()));
+
+        let op_join = just("++").map(|c| Token::Op(c.to_string()));
+
+        op_add
+            .or(op_sub)
+            .or(op_mul)
+            .or(op_div)
+            .or(op_rem)
+            .or(op_eq)
+            .or(op_neq)
+            .or(op_less)
+            .or(op_less_eq)
+            .or(op_more)
+            .or(op_more_eq)
+            .or(op_bit_and)
+            .or(op_logical_and)
+            .or(op_bit_or)
+            .or(op_logical_or)
+            .or(op_bit_xor)
+            .or(op_join)
+    };
 
     let assign = just("=").map(|_| Token::Assign);
     let declare = just(":").map(|_| Token::Declare);
