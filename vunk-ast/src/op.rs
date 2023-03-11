@@ -21,8 +21,10 @@ pub enum BinaryOp {
     LessEq,
     More,
     MoreEq,
-    And,
-    Or,
-    Xor,
+    BitAnd,
+    LogicalAnd,
+    BitOr,
+    LogicalOr,
+    BitXor,
     Join,
 }
