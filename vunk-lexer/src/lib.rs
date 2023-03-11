@@ -13,6 +13,7 @@ use chumsky::text::TextParser;
 use chumsky::Parser;
 
 pub type Span = std::ops::Range<usize>;
+pub type Spanned<T> = (T, Span);
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Token {
@@ -83,7 +84,7 @@ impl std::fmt::Display for Token {
     }
 }
 
-pub fn lexer() -> impl Parser<char, Vec<(Token, Span)>, Error = Simple<char>> {
+pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
     let num = text::int(10)
         .chain::<char, _, _>(just('.').chain(text::digits(10)).or_not().flatten())
         .collect::<String>()

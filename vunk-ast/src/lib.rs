@@ -4,6 +4,10 @@
 
 pub mod expr;
 pub mod function;
+pub mod generic;
+pub mod ifelse;
+pub mod letin;
 pub mod literal;
+pub mod name;
+pub mod op;
 pub mod program;
-pub mod ty;

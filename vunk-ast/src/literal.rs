@@ -3,24 +3,29 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub enum Literal {
     Bool(Bool),
     Integer(Integer),
     Float(Float),
     Str(Str),
+    List(Vec<crate::expr::Expr>),
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Bool {
     pub value: bool,
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Integer {
     pub value: IntegerValue,
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub enum IntegerValue {
     I8(i8),
     I16(i16),
@@ -33,11 +38,13 @@ pub enum IntegerValue {
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Float {
     pub value: f64,
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Str {
     pub value: String,
 }
