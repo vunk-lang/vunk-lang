@@ -53,6 +53,49 @@ pub struct DefRhs {
     pub expr: Box<Expr>,
 }
 
+impl DefRhs {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        let par_open = select! {
+            (Token::ParOpen, span) => ((), span)
+        };
+
+        let par_close = select! {
+            (Token::ParClose, span) => ((), span)
+        };
+
+        let arrow = select! {
+            (Token::Arrow, span) => ((), span)
+        };
+
+        let comma = select! {
+            (Token::Comma, span) => ((), span)
+        };
+
+        par_open
+            .ignore_then(DefArg::parser().separated_by(comma))
+            .then_ignore(par_close)
+            .then_ignore(arrow)
+            .then(Expr::parser())
+            .map(|(args, (expr, expr_span))| {
+                let span = std::ops::Range {
+                    start: args
+                        .first()
+                        .map(|tpl| tpl.1.start)
+                        .unwrap_or(expr_span.start),
+                    end: expr_span.end,
+                };
+
+                let def_rhs = DefRhs {
+                    args: args.into_iter().map(|tpl| tpl.0).collect(),
+                    expr: Box::new(expr),
+                };
+
+                (def_rhs, span)
+            })
+    }
+}
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct DefArg {
