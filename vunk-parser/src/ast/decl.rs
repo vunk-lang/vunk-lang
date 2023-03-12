@@ -169,16 +169,83 @@ impl DeclArg {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeImpl {
     pub name: TypeName,
-    pub generics: Option<WhereClause>,
-    pub members: Vec<Def>,
+    pub generics: Vec<TypeName>,
+    pub whereclause: Option<WhereClause>,
+    pub members: Vec<TypeImplMember>,
 }
 
 impl TypeImpl {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let i: Box<dyn Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>>> =
-            { unimplemented!() };
+        let kw_impl = select! {
+            (Token::Impl, span) => ((), span)
+        };
 
-        std::sync::Arc::new(i)
+        let block_open = select! {
+            (Token::BlockOpen, span) => ((), span)
+        };
+
+        let block_close = select! {
+            (Token::BlockClose, span) => ((), span)
+        };
+
+        let assign = select! {
+            (Token::Assign, span) => ((), span)
+        };
+
+        kw_impl
+            .ignore_then(TypeName::parser())
+            .then(TypeName::parser().repeated().or_not()) // Generics
+            .then(WhereClause::parser().or_not())
+            .then_ignore(assign)
+            .then_ignore(block_open)
+            .then(TypeImplMember::parser().repeated().or_not())
+            .then_ignore(block_close)
+            .map(|((((type_name, type_name_span), generics), whereclause), members)| {
+                let span = std::ops::Range {
+                    start: type_name_span.start,
+                    end: members
+                        .as_ref()
+                        .map(|mem| {
+                            mem.iter()
+                                .rev()
+                                .next()
+                                .map(|(_, span)| span.end)
+                                .unwrap_or(type_name_span.end)
+                        })
+                        .unwrap_or(type_name_span.end),
+                };
+
+                let typeimpl = TypeImpl {
+                    name: type_name,
+                    generics: generics.unwrap_or_default().into_iter().map(|(gen, _)| gen).collect(),
+                    whereclause: whereclause.map(|wc| wc.0),
+                    members: members
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|(mem, _span)| mem)
+                        .collect(),
+                };
+
+                (typeimpl, span)
+            })
+    }
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum TypeImplMember {
+    Decl(Decl),
+    Def(Def),
+}
+
+impl TypeImplMember {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        let decl_parser =
+            Decl::parser().map(|(decl, decl_span)| (TypeImplMember::Decl(decl), decl_span));
+        let def_parser =
+            Def::parser().map(|(decl, decl_span)| (TypeImplMember::Def(decl), decl_span));
+        decl_parser.or(def_parser)
     }
 }
