@@ -74,3 +74,21 @@ impl TraitName {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_type_path_parser() {
+        let parser = TypePath::parser();
+        let tokens = vunk_lexer::lexer().parse("Foo.Bar.Baz").unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        let typenames = parsed.0 .0;
+        assert_eq!(typenames.len(), 3);
+        assert_eq!(typenames[0], TypeName(String::from("Foo")));
+        assert_eq!(typenames[1], TypeName(String::from("Bar")));
+        assert_eq!(typenames[2], TypeName(String::from("Baz")));
+    }
+}
