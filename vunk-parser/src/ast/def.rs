@@ -317,9 +317,41 @@ pub struct EnumTypeDef {
 impl EnumTypeDef {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let i: Box<dyn Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>>> =
-            { unimplemented!() };
+        let par_open = select! {
+            (Token::ParOpen, span) => ((), span)
+        };
 
-        std::sync::Arc::new(i)
+        let par_close = select! {
+            (Token::ParClose, span) => ((), span)
+        };
+
+        let comma = select! {
+            (Token::Comma, span) => ((), span)
+        };
+
+        TypeName::parser()
+            .then({
+                par_open.ignore_then({
+                    DefArg::parser()
+                        .separated_by(comma)
+                }).then_ignore(par_close)
+                .or_not()
+            })
+            .map(|((type_name, type_span), arg_list)| {
+                let span = std::ops::Range {
+                    start: type_span.start,
+                    end: arg_list.as_ref()
+                        .map(|arg_list| {
+                            arg_list.iter().rev().next().map(|(_, span)| span.end).unwrap_or(type_span.end)
+                        }).unwrap_or(type_span.end)
+                };
+
+                let enumtypedef = EnumTypeDef {
+                    name: type_name,
+                    members: arg_list.unwrap_or_default().into_iter().map(|(mem, _)| mem).collect(),
+                };
+
+                (enumtypedef, span)
+            })
     }
 }
