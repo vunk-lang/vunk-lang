@@ -103,6 +103,32 @@ pub struct DefArg {
     pub ty: DefArgType,
 }
 
+impl DefArg {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        VariableName::parser()
+            .then_ignore(select! {
+                (Token::Declare, span) => ((), span)
+            })
+            .then(DefArgType::parser())
+            .map(
+                |((var_name, var_span), (def_arg_type, def_arg_type_span))| {
+                    let span = std::ops::Range {
+                        start: var_span.start,
+                        end: def_arg_type_span.end,
+                    };
+
+                    let defarg = DefArg {
+                        name: var_name,
+                        ty: def_arg_type,
+                    };
+
+                    (defarg, span)
+                },
+            )
+    }
+}
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum DefArgType {
