@@ -91,3 +91,21 @@ pub struct Generic {
     pub type_name: TypeName,
     pub where_clause: WhereClause,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_where_clause_parser() {
+        let parser = WhereClause::parser();
+        let tokens = vunk_lexer::lexer().parse("where Foo: Bar").unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        let clauses = parsed.0.0;
+        assert_eq!(clauses.len(), 1);
+        assert_eq!(clauses[0].target_name, TypeName(String::from("Foo")));
+        assert_eq!(clauses[0].bounds.len(), 1);
+        assert_eq!(clauses[0].bounds[0], TraitName(String::from("Bar")));
+    }
+}
