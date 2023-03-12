@@ -25,10 +25,38 @@ pub struct Decl {
 impl Decl {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let i: Box<dyn Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>>> =
-            { unimplemented!() };
+        Visibility::parser()
+            .then(VariableName::parser())
+            .then_ignore({
+                select! {
+                    (Token::Declare, span) => ((), span)
+                }
+            })
+            .then(DeclType::parser())
+            .then(WhereClause::parser().or_not())
+            .map(
+                |(
+                    (((vis, vis_span), (varname, _varname_span)), (declty, declty_span)),
+                    opt_where,
+                )| {
+                    let span = std::ops::Range {
+                        start: vis_span.start,
+                        end: opt_where
+                            .as_ref()
+                            .map(|tpl| tpl.1.end)
+                            .unwrap_or(declty_span.end),
+                    };
 
-        std::sync::Arc::new(i)
+                    let decl = Decl {
+                        visibility: vis,
+                        lhs: varname,
+                        rhs: declty,
+                        whereclause: opt_where.map(|tpl| tpl.0),
+                    };
+
+                    (decl, span)
+                },
+            )
     }
 }
 
