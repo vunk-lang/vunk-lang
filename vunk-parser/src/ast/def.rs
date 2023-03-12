@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use chumsky::prelude::Simple;
-use chumsky::select;
 use chumsky::Parser;
 use vunk_lexer::Token;
 
@@ -12,6 +11,18 @@ use crate::ast::generic::WhereClause;
 use crate::ast::name::TypeName;
 use crate::ast::name::VariableName;
 use crate::Spanned;
+
+use super::util::alternative;
+use super::util::arrow;
+use super::util::assign;
+use super::util::block_close;
+use super::util::block_open;
+use super::util::comma;
+use super::util::declare;
+use super::util::kw_enum;
+use super::util::kw_type;
+use super::util::par_close;
+use super::util::par_open;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -24,11 +35,7 @@ impl Def {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         VariableName::parser()
-            .then_ignore({
-                select! {
-                    (Token::Assign, span) => ((), span)
-                }
-            })
+            .then_ignore(assign())
             .then(DefRhs::parser())
             .map(|((var_name, var_name_span), (def_rhs, def_rhs_span))| {
                 let span = std::ops::Range {
@@ -56,26 +63,10 @@ pub struct DefRhs {
 impl DefRhs {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let par_open = select! {
-            (Token::ParOpen, span) => ((), span)
-        };
-
-        let par_close = select! {
-            (Token::ParClose, span) => ((), span)
-        };
-
-        let arrow = select! {
-            (Token::Arrow, span) => ((), span)
-        };
-
-        let comma = select! {
-            (Token::Comma, span) => ((), span)
-        };
-
-        par_open
-            .ignore_then(DefArg::parser().separated_by(comma))
-            .then_ignore(par_close)
-            .then_ignore(arrow)
+        par_open()
+            .ignore_then(DefArg::parser().separated_by(comma()))
+            .then_ignore(par_close())
+            .then_ignore(arrow())
             .then(Expr::parser())
             .map(|(args, (expr, expr_span))| {
                 let span = std::ops::Range {
@@ -107,9 +98,7 @@ impl DefArg {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         VariableName::parser()
-            .then_ignore(select! {
-                (Token::Declare, span) => ((), span)
-            })
+            .then_ignore(declare())
             .then(DefArgType::parser())
             .map(
                 |((var_name, var_span), (def_arg_type, def_arg_type_span))| {
@@ -143,26 +132,10 @@ impl DefArgType {
             TypeName::parser().map(|(tn, span)| (DefArgType::TypeName(tn), span));
 
         let func_parser = {
-            let par_open = select! {
-                (Token::ParOpen, span) => ((), span)
-            };
-
-            let par_close = select! {
-                (Token::ParClose, span) => ((), span)
-            };
-
-            let arrow = select! {
-                (Token::Arrow, span) => ((), span)
-            };
-
-            let comma = select! {
-                (Token::Comma, span) => ((), span)
-            };
-
-            par_open
-                .ignore_then(DefArg::parser().separated_by(comma))
-                .then_ignore(par_close)
-                .then_ignore(arrow)
+            par_open()
+                .ignore_then(DefArg::parser().separated_by(comma()))
+                .then_ignore(par_close())
+                .then_ignore(arrow())
                 .then(TypeName::parser())
                 .map(|(args, (retty, retty_span))| {
                     let span = std::ops::Range {
@@ -198,33 +171,17 @@ pub struct TypeDef {
 impl TypeDef {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let type_kw = select! {
-            (Token::Type, span) => ((), span)
-        };
-        let comma = select! {
-            (Token::Comma, span) => ((), span)
-        };
-        let assign = select! {
-            (Token::Assign, span) => ((), span)
-        };
-        let block_open = select! {
-            (Token::BlockOpen, span) => ((), span)
-        };
-        let block_close = select! {
-            (Token::BlockClose, span) => ((), span)
-        };
-
-        type_kw
+        kw_type()
             .ignore_then(TypeName::parser())
             .then({
                 // Generics
                 TypeName::parser().repeated().or_not()
             })
             .then(WhereClause::parser().or_not())
-            .then_ignore(assign)
-            .then_ignore(block_open)
-            .then(DefArg::parser().separated_by(comma))
-            .then_ignore(block_close)
+            .then_ignore(assign())
+            .then_ignore(block_open())
+            .then(DefArg::parser().separated_by(comma()))
+            .then_ignore(block_close())
             .map(
                 |((((type_name, type_span), generics), whereclause), members)| {
                     let span = std::ops::Range {
@@ -265,20 +222,10 @@ pub struct EnumDef {
 impl EnumDef {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let kw_enum = select! {
-            (Token::Enum, span) => ((), span)
-        };
-        let assign = select! {
-            (Token::Assign, span) => ((), span)
-        };
-        let alternative = select! {
-            (Token::Alternative, span) => ((), span)
-        };
-
-        kw_enum
+        kw_enum()
             .ignore_then(TypeName::parser())
-            .then_ignore(assign)
-            .then(EnumTypeDef::parser().separated_by(alternative))
+            .then_ignore(assign())
+            .then(EnumTypeDef::parser().separated_by(alternative()))
             .then(WhereClause::parser().or_not())
             .map(|(((type_name, type_span), enum_variants), whereclause)| {
                 let span = std::ops::Range {
@@ -298,7 +245,10 @@ impl EnumDef {
 
                 let enumdef = EnumDef {
                     name: type_name,
-                    variants: enum_variants.into_iter().map(|(variant, _)| variant).collect(),
+                    variants: enum_variants
+                        .into_iter()
+                        .map(|(variant, _)| variant)
+                        .collect(),
                     whereclause: whereclause.map(|(clause, _)| clause),
                 };
 
@@ -317,38 +267,36 @@ pub struct EnumTypeDef {
 impl EnumTypeDef {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let par_open = select! {
-            (Token::ParOpen, span) => ((), span)
-        };
-
-        let par_close = select! {
-            (Token::ParClose, span) => ((), span)
-        };
-
-        let comma = select! {
-            (Token::Comma, span) => ((), span)
-        };
-
         TypeName::parser()
             .then({
-                par_open.ignore_then({
-                    DefArg::parser()
-                        .separated_by(comma)
-                }).then_ignore(par_close)
-                .or_not()
+                par_open()
+                    .ignore_then(DefArg::parser().separated_by(comma()))
+                    .then_ignore(par_close())
+                    .or_not()
             })
             .map(|((type_name, type_span), arg_list)| {
                 let span = std::ops::Range {
                     start: type_span.start,
-                    end: arg_list.as_ref()
+                    end: arg_list
+                        .as_ref()
                         .map(|arg_list| {
-                            arg_list.iter().rev().next().map(|(_, span)| span.end).unwrap_or(type_span.end)
-                        }).unwrap_or(type_span.end)
+                            arg_list
+                                .iter()
+                                .rev()
+                                .next()
+                                .map(|(_, span)| span.end)
+                                .unwrap_or(type_span.end)
+                        })
+                        .unwrap_or(type_span.end),
                 };
 
                 let enumtypedef = EnumTypeDef {
                     name: type_name,
-                    members: arg_list.unwrap_or_default().into_iter().map(|(mem, _)| mem).collect(),
+                    members: arg_list
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|(mem, _)| mem)
+                        .collect(),
                 };
 
                 (enumtypedef, span)

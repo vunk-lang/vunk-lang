@@ -12,6 +12,9 @@ use crate::ast::name::TraitName;
 use crate::ast::name::TypeName;
 use crate::Spanned;
 
+use super::util::declare;
+use super::util::kw_where;
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct WhereClause(pub Vec<Clause>);
@@ -20,23 +23,21 @@ impl WhereClause {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<WhereClause>, Error = Simple<Spanned<Token>>> + Clone
     {
-        select! {
-            (Token::Where, span) => ((), span)
-        }
-        .ignore_then(Clause::parser().repeated())
-        .map(|clauses| {
-            let span = std::ops::Range {
-                start: clauses.first().map(|tpl| tpl.1.start).unwrap_or(0),
-                end: clauses
-                    .iter()
-                    .rev()
-                    .next()
-                    .map(|tpl| tpl.1.end)
-                    .unwrap_or(0),
-            };
-            let clauses = WhereClause(clauses.into_iter().map(|tpl| tpl.0).collect());
-            (clauses, span)
-        })
+        kw_where()
+            .ignore_then(Clause::parser().repeated())
+            .map(|clauses| {
+                let span = std::ops::Range {
+                    start: clauses.first().map(|tpl| tpl.1.start).unwrap_or(0),
+                    end: clauses
+                        .iter()
+                        .rev()
+                        .next()
+                        .map(|tpl| tpl.1.end)
+                        .unwrap_or(0),
+                };
+                let clauses = WhereClause(clauses.into_iter().map(|tpl| tpl.0).collect());
+                (clauses, span)
+            })
     }
 }
 
@@ -58,11 +59,7 @@ impl Clause {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         TypeName::parser()
-            .then_ignore({
-                select! {
-                    (Token::Declare, span) => ((), span)
-                }
-            })
+            .then_ignore(declare())
             .then(TraitName::parser().separated_by(plus_parser()))
             .map(|((type_name, type_name_span), generic_types_list)| {
                 let span = std::ops::Range {
@@ -102,7 +99,7 @@ mod tests {
         let tokens = vunk_lexer::lexer().parse("where Foo: Bar").unwrap();
         let parsed = parser.parse(tokens).unwrap();
 
-        let clauses = parsed.0.0;
+        let clauses = parsed.0 .0;
         assert_eq!(clauses.len(), 1);
         assert_eq!(clauses[0].target_name, TypeName(String::from("Foo")));
         assert_eq!(clauses[0].bounds.len(), 1);

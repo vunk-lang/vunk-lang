@@ -3,8 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use chumsky::prelude::Simple;
-use chumsky::select;
 use chumsky::Parser;
+use chumsky::select;
 use vunk_lexer::Token;
 
 use crate::ast::def::Def;
@@ -12,6 +12,16 @@ use crate::ast::generic::WhereClause;
 use crate::ast::name::TypeName;
 use crate::ast::name::VariableName;
 use crate::Spanned;
+
+use super::util::arrow;
+use super::util::assign;
+use super::util::block_close;
+use super::util::block_open;
+use super::util::comma;
+use super::util::declare;
+use super::util::kw_impl;
+use super::util::par_close;
+use super::util::par_open;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -27,11 +37,7 @@ impl Decl {
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         Visibility::parser()
             .then(VariableName::parser())
-            .then_ignore({
-                select! {
-                    (Token::Declare, span) => ((), span)
-                }
-            })
+            .then_ignore(declare())
             .then(DeclType::parser())
             .then(WhereClause::parser().or_not())
             .map(
@@ -92,26 +98,10 @@ impl DeclType {
             (dty, type_name_span)
         });
 
-        let par_open = select! {
-            (Token::ParOpen, span) => ((), span)
-        };
-
-        let par_close = select! {
-            (Token::ParClose, span) => ((), span)
-        };
-
-        let arrow = select! {
-            (Token::Arrow, span) => ((), span)
-        };
-
-        let comma = select! {
-            (Token::Comma, span) => ((), span)
-        };
-
-        let func_parser = par_open
-            .ignore_then(DeclArg::parser().separated_by(comma))
-            .then_ignore(par_close)
-            .then_ignore(arrow)
+        let func_parser = par_open()
+            .ignore_then(DeclArg::parser().separated_by(comma()))
+            .then_ignore(par_close())
+            .then_ignore(arrow())
             .then(TypeName::parser())
             .map(|(args, (retty, retty_span))| {
                 let span = std::ops::Range {
@@ -177,58 +167,48 @@ pub struct TypeImpl {
 impl TypeImpl {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let kw_impl = select! {
-            (Token::Impl, span) => ((), span)
-        };
-
-        let block_open = select! {
-            (Token::BlockOpen, span) => ((), span)
-        };
-
-        let block_close = select! {
-            (Token::BlockClose, span) => ((), span)
-        };
-
-        let assign = select! {
-            (Token::Assign, span) => ((), span)
-        };
-
-        kw_impl
+        kw_impl()
             .ignore_then(TypeName::parser())
             .then(TypeName::parser().repeated().or_not()) // Generics
             .then(WhereClause::parser().or_not())
-            .then_ignore(assign)
-            .then_ignore(block_open)
+            .then_ignore(assign())
+            .then_ignore(block_open())
             .then(TypeImplMember::parser().repeated().or_not())
-            .then_ignore(block_close)
-            .map(|((((type_name, type_name_span), generics), whereclause), members)| {
-                let span = std::ops::Range {
-                    start: type_name_span.start,
-                    end: members
-                        .as_ref()
-                        .map(|mem| {
-                            mem.iter()
-                                .rev()
-                                .next()
-                                .map(|(_, span)| span.end)
-                                .unwrap_or(type_name_span.end)
-                        })
-                        .unwrap_or(type_name_span.end),
-                };
+            .then_ignore(block_close())
+            .map(
+                |((((type_name, type_name_span), generics), whereclause), members)| {
+                    let span = std::ops::Range {
+                        start: type_name_span.start,
+                        end: members
+                            .as_ref()
+                            .map(|mem| {
+                                mem.iter()
+                                    .rev()
+                                    .next()
+                                    .map(|(_, span)| span.end)
+                                    .unwrap_or(type_name_span.end)
+                            })
+                            .unwrap_or(type_name_span.end),
+                    };
 
-                let typeimpl = TypeImpl {
-                    name: type_name,
-                    generics: generics.unwrap_or_default().into_iter().map(|(gen, _)| gen).collect(),
-                    whereclause: whereclause.map(|wc| wc.0),
-                    members: members
-                        .unwrap_or_default()
-                        .into_iter()
-                        .map(|(mem, _span)| mem)
-                        .collect(),
-                };
+                    let typeimpl = TypeImpl {
+                        name: type_name,
+                        generics: generics
+                            .unwrap_or_default()
+                            .into_iter()
+                            .map(|(gen, _)| gen)
+                            .collect(),
+                        whereclause: whereclause.map(|wc| wc.0),
+                        members: members
+                            .unwrap_or_default()
+                            .into_iter()
+                            .map(|(mem, _span)| mem)
+                            .collect(),
+                    };
 
-                (typeimpl, span)
-            })
+                    (typeimpl, span)
+                },
+            )
     }
 }
 
