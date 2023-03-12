@@ -278,3 +278,13 @@ pub struct EnumTypeDef {
     pub name: TypeName,
     pub members: Vec<DefArg>,
 }
+
+impl EnumTypeDef {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        let i: Box<dyn Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>>> =
+            { unimplemented!() };
+
+        std::sync::Arc::new(i)
+    }
+}
