@@ -41,6 +41,26 @@ impl TypeName {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypePath(pub Vec<TypeName>);
 
+impl TypePath {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<TypePath>, Error = Simple<Spanned<Token>>> + Clone
+    {
+        TypeName::parser()
+            .separated_by(select! {
+                (Token::Ctrl('.'), span) => ((), span)
+            })
+            .map(|list| {
+                let span = std::ops::Range {
+                    start: list.get(0).map(|r| r.1.start).unwrap_or(0),
+                    end: list.iter().rev().next().map(|r| r.1.end).unwrap_or(0),
+                };
+
+                let typelist = list.into_iter().map(|tpl| tpl.0).collect();
+                (TypePath(typelist), span)
+            })
+    }
+}
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TraitName(pub String);
