@@ -2,8 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use crate::decl::Decl;
+use crate::def::Def;
 use crate::expr::Expr;
-use crate::name::VariableName;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -14,7 +15,7 @@ pub struct LetIns {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct LetIn {
-    pub binding: VariableName,
-    pub expr: Expr,
+pub enum LetIn {
+    Decl(Decl),
+    Def(Def),
 }
