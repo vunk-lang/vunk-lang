@@ -98,3 +98,11 @@ pub fn kw_where() -> impl Parser<Spanned<Token>, Spanned<()>, Error = Simple<Spa
         (Token::Where, span) => ((), span)
     }
 }
+
+pub fn separator() -> impl Parser<Spanned<Token>, Spanned<()>, Error = Simple<Spanned<Token>>> + Clone
+{
+    select! {
+        (Token::Ctrl('.'), span) => ((), span)
+    }
+}
+
