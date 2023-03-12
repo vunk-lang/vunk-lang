@@ -34,6 +34,8 @@ pub enum Token {
     Let,
     In,
 
+    ParOpen,
+    ParClose,
     BlockOpen,
     BlockClose,
     Alternative,
@@ -51,6 +53,7 @@ pub enum Token {
     Pub,
 
     Seperator,
+    Comma,
 
     Comment(String),
 }
@@ -76,7 +79,10 @@ impl std::fmt::Display for Token {
             Op(s) => write!(f, "{}", s),
             Use => write!(f, "use"),
             Pub => write!(f, "pub"),
+            Comma => write!(f, ","),
             Seperator => write!(f, "."),
+            ParOpen => write!(f, "("),
+            ParClose => write!(f, ")"),
             BlockOpen => write!(f, "{{"),
             BlockClose => write!(f, "}}"),
             ListOpen => write!(f, "["),
@@ -151,6 +157,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
     let assign = just("=").map(|_| Token::Assign);
     let declare = just(":").map(|_| Token::Declare);
     let seperator = just(".").map(|_| Token::Seperator);
+    let comma = just(",").map(|_| Token::Comma);
     let kw_use = just("use").map(|_| Token::Use);
     let kw_pub = just("pub").map(|_| Token::Pub);
     let kw_arrow = just("->").map(|_| Token::Arrow);
@@ -165,6 +172,8 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
     let kw_when = just("when").map(|_| Token::When);
     let kw_type = just("type").map(|_| Token::Type);
     let kw_enum = just("enum").map(|_| Token::Enum);
+    let paropen = just("(").map(|_| Token::ParOpen);
+    let parclose = just(")").map(|_| Token::ParClose);
     let blockopen = just("{").map(|_| Token::BlockOpen);
     let blockclose = just("}").map(|_| Token::BlockClose);
     let listopen = just("[").map(|_| Token::ListOpen);
@@ -178,6 +187,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
         .or(assign)
         .or(declare)
         .or(seperator)
+        .or(comma)
         .or(kw_use)
         .or(kw_pub)
         .or(kw_arrow)
@@ -192,6 +202,8 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
         .or(kw_when)
         .or(kw_type)
         .or(kw_enum)
+        .or(paropen)
+        .or(parclose)
         .or(blockopen)
         .or(blockclose)
         .or(listopen)
