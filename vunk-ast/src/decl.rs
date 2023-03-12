@@ -2,6 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+use crate::def::Def;
 use crate::generic::WhereClause;
 use crate::name::TypeName;
 use crate::name::VariableName;
@@ -33,4 +34,12 @@ pub struct DeclArg {
 pub enum DeclArgType {
     TypeName(TypeName),
     Func { args: Vec<DeclArg>, retty: TypeName },
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct TypeImpl {
+    pub name: TypeName,
+    pub generics: Option<WhereClause>,
+    pub members: Vec<Def>,
 }
