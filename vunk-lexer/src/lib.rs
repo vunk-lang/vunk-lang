@@ -52,6 +52,7 @@ pub enum Token {
 
     Use,
     Pub,
+    Mod,
 
     Separator,
     Comma,
@@ -95,6 +96,7 @@ impl std::fmt::Display for Token {
             When => write!(f, "when"),
             Type => write!(f, "type"),
             Enum => write!(f, "enum"),
+            Mod => write!(f, "mod"),
         }
     }
 }
@@ -175,6 +177,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
     let kw_when = just("when").map(|_| Token::When);
     let kw_type = just("type").map(|_| Token::Type);
     let kw_enum = just("enum").map(|_| Token::Enum);
+    let kw_mod = just("mod").map(|_| Token::Mod);
     let paropen = just("(").map(|_| Token::ParOpen);
     let parclose = just(")").map(|_| Token::ParClose);
     let blockopen = just("{").map(|_| Token::BlockOpen);
@@ -206,6 +209,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
         .or(kw_when)
         .or(kw_type)
         .or(kw_enum)
+        .or(kw_mod)
         .or(paropen)
         .or(parclose)
         .or(blockopen)
