@@ -15,6 +15,7 @@ use crate::Spanned;
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct Decl {
+    pub visibility: Visibility,
     pub lhs: VariableName,
     pub rhs: DeclType,
     pub whereclause: Option<WhereClause>,
@@ -28,6 +29,13 @@ impl Decl {
 
         std::sync::Arc::new(i)
     }
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum Visibility {
+    Public,
+    Private,
 }
 
 #[derive(Debug)]
