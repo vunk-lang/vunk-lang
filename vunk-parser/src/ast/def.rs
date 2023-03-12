@@ -262,6 +262,16 @@ pub struct EnumDef {
     pub whereclause: Option<WhereClause>,
 }
 
+impl EnumDef {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        let i: Box<dyn Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>>> =
+            { unimplemented!() };
+
+        std::sync::Arc::new(i)
+    }
+}
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct EnumTypeDef {
