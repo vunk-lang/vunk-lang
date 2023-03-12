@@ -11,6 +11,7 @@ use crate::ast::def::Def;
 use crate::ast::ifelse::IfElse;
 use crate::ast::letin::LetIns;
 use crate::ast::literal::Literal;
+use crate::ast::module::Module;
 use crate::ast::name::VariableName;
 use crate::ast::op::BinaryOp;
 use crate::ast::op::UnaryOp;
@@ -25,6 +26,7 @@ pub enum Expr {
     Literal(Literal),
     LetIn(LetIns),
     IfElse(IfElse),
+    Module(Module),
     Decl(Decl),
     Def(Def),
 }
