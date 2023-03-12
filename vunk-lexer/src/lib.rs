@@ -22,6 +22,7 @@ pub enum Token {
     Arrow,
     Assign,
     Declare,
+    Plus,
     Ctrl(char),
     Op(String),
 
@@ -67,6 +68,7 @@ impl std::fmt::Display for Token {
             Arrow => write!(f, "->"),
             Assign => write!(f, "="),
             Declare => write!(f, ":"),
+            Plus => write!(f, "+"),
             Bool(x) => write!(f, "{}", x),
             Ctrl(c) => write!(f, "{}", c),
             Else => write!(f, "else"),
@@ -156,6 +158,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
 
     let assign = just("=").map(|_| Token::Assign);
     let declare = just(":").map(|_| Token::Declare);
+    let plus = just("+").map(|_| Token::Plus);
     let seperator = just(".").map(|_| Token::Seperator);
     let comma = just(",").map(|_| Token::Comma);
     let kw_use = just("use").map(|_| Token::Use);
@@ -186,6 +189,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
         .or(str_)
         .or(assign)
         .or(declare)
+        .or(plus)
         .or(seperator)
         .or(comma)
         .or(kw_use)
