@@ -52,6 +52,33 @@ pub struct DeclArg {
     pub ty: DeclType,
 }
 
+impl DeclArg {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        chumsky::recursive::recursive(|_tree| {
+            VariableName::parser()
+                .or_not()
+                .then(DeclType::parser())
+                .map(|(opt_var_name, (decl_type, decl_type_span))| {
+                    let span = std::ops::Range {
+                        start: opt_var_name
+                            .as_ref()
+                            .map(|tpl| tpl.1.start)
+                            .unwrap_or(decl_type_span.start),
+                        end: decl_type_span.end,
+                    };
+
+                    let decl_arg = DeclArg {
+                        name: opt_var_name.map(|tpl| tpl.0),
+                        ty: decl_type,
+                    };
+
+                    (decl_arg, span)
+                })
+        })
+    }
+}
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeImpl {
