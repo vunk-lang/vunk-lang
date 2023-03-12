@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use chumsky::prelude::Simple;
+use chumsky::select;
 use chumsky::Parser;
 use vunk_lexer::Token;
 
@@ -43,6 +44,53 @@ pub enum Visibility {
 pub enum DeclType {
     TypeName(TypeName),
     Func { args: Vec<DeclArg>, retty: TypeName },
+}
+
+impl DeclType {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        let type_name_parser = TypeName::parser().map(|(type_name, type_name_span)| {
+            let dty = DeclType::TypeName(type_name);
+            (dty, type_name_span)
+        });
+
+        let par_open = select! {
+            (Token::ParOpen, span) => ((), span)
+        };
+
+        let par_close = select! {
+            (Token::ParClose, span) => ((), span)
+        };
+
+        let arrow = select! {
+            (Token::Arrow, span) => ((), span)
+        };
+
+        let comma = select! {
+            (Token::Comma, span) => ((), span)
+        };
+
+        let func_parser = par_open
+            .ignore_then(DeclArg::parser().separated_by(comma))
+            .then_ignore(par_close)
+            .then_ignore(arrow)
+            .then(TypeName::parser())
+            .map(|(args, (retty, retty_span))| {
+                let span = std::ops::Range {
+                    start: args.first().map(|tpl| tpl.1.start).unwrap_or(0),
+                    end: retty_span.end,
+                };
+
+                let decl_type = DeclType::Func {
+                    args: args.into_iter().map(|tpl| tpl.0).collect(),
+                    retty,
+                };
+
+                (decl_type, span)
+            });
+
+        type_name_parser.or(func_parser)
+    }
 }
 
 #[derive(Debug)]
