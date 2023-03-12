@@ -42,3 +42,18 @@ pub struct TypeDef {
     pub members: Vec<DefArg>,
     pub generics: Option<WhereClause>,
 }
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct EnumDef {
+    pub name: TypeName,
+    pub variants: Vec<EnumTypeDef>,
+    pub whereclause: Option<WhereClause>,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct EnumTypeDef {
+    pub name: TypeName,
+    pub members: Vec<DefArg>,
+}
