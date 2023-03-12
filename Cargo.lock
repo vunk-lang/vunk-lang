@@ -473,10 +473,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "vunk-ast"
-version = "0.1.0"
-
-[[package]]
 name = "vunk-lexer"
 version = "0.1.0"
 dependencies = [
@@ -491,7 +487,6 @@ dependencies = [
  "chumsky",
  "tokio",
  "tracing",
- "vunk-ast",
  "vunk-lexer",
 ]
 
