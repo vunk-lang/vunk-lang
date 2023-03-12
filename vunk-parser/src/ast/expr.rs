@@ -2,14 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::decl::Decl;
-use crate::def::Def;
-use crate::ifelse::IfElse;
-use crate::letin::LetIns;
-use crate::literal::Literal;
-use crate::name::VariableName;
-use crate::op::BinaryOp;
-use crate::op::UnaryOp;
+use crate::ast::decl::Decl;
+use crate::ast::def::Def;
+use crate::ast::ifelse::IfElse;
+use crate::ast::letin::LetIns;
+use crate::ast::literal::Literal;
+use crate::ast::name::VariableName;
+use crate::ast::op::BinaryOp;
+use crate::ast::op::UnaryOp;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
