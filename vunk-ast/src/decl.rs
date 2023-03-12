@@ -26,14 +26,7 @@ pub enum DeclType {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct DeclArg {
     pub name: Option<VariableName>,
-    pub ty: DeclArgType,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub enum DeclArgType {
-    TypeName(TypeName),
-    Func { args: Vec<DeclArg>, retty: TypeName },
+    pub ty: DeclType,
 }
 
 #[derive(Debug)]
