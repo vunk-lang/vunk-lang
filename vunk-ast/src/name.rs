@@ -12,4 +12,8 @@ pub struct TypeName(pub String);
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
+pub struct TypePath(pub Vec<TypeName>);
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct TraitName(pub String);

@@ -53,7 +53,7 @@ pub enum Token {
     Use,
     Pub,
 
-    Seperator,
+    Separator,
     Comma,
 
     Comment(String),
@@ -82,7 +82,7 @@ impl std::fmt::Display for Token {
             Use => write!(f, "use"),
             Pub => write!(f, "pub"),
             Comma => write!(f, ","),
-            Seperator => write!(f, "."),
+            Separator => write!(f, "."),
             ParOpen => write!(f, "("),
             ParClose => write!(f, ")"),
             BlockOpen => write!(f, "{{"),
@@ -159,7 +159,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
     let assign = just("=").map(|_| Token::Assign);
     let declare = just(":").map(|_| Token::Declare);
     let plus = just("+").map(|_| Token::Plus);
-    let seperator = just(".").map(|_| Token::Seperator);
+    let separator = just(".").map(|_| Token::Separator);
     let comma = just(",").map(|_| Token::Comma);
     let kw_use = just("use").map(|_| Token::Use);
     let kw_pub = just("pub").map(|_| Token::Pub);
@@ -190,7 +190,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
         .or(assign)
         .or(declare)
         .or(plus)
-        .or(seperator)
+        .or(separator)
         .or(comma)
         .or(kw_use)
         .or(kw_pub)
