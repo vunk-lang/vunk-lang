@@ -67,6 +67,16 @@ pub enum Visibility {
     Private,
 }
 
+impl Visibility {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        select! {
+            (Token::Pub, span) => (Self::Public, span)
+        }
+        .or_else(|_error| Ok((Self::Private, std::ops::Range::default())))
+    }
+}
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum DeclType {
