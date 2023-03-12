@@ -265,10 +265,45 @@ pub struct EnumDef {
 impl EnumDef {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let i: Box<dyn Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>>> =
-            { unimplemented!() };
+        let kw_enum = select! {
+            (Token::Enum, span) => ((), span)
+        };
+        let assign = select! {
+            (Token::Assign, span) => ((), span)
+        };
+        let alternative = select! {
+            (Token::Alternative, span) => ((), span)
+        };
 
-        std::sync::Arc::new(i)
+        kw_enum
+            .ignore_then(TypeName::parser())
+            .then_ignore(assign)
+            .then(EnumTypeDef::parser().separated_by(alternative))
+            .then(WhereClause::parser().or_not())
+            .map(|(((type_name, type_span), enum_variants), whereclause)| {
+                let span = std::ops::Range {
+                    start: type_span.start,
+                    end: whereclause
+                        .as_ref()
+                        .map(|(_, span)| span.end)
+                        .unwrap_or_else(|| {
+                            enum_variants
+                                .iter()
+                                .rev()
+                                .next()
+                                .map(|(_, span)| span.end)
+                                .unwrap_or(type_span.end)
+                        }),
+                };
+
+                let enumdef = EnumDef {
+                    name: type_name,
+                    variants: enum_variants.into_iter().map(|(variant, _)| variant).collect(),
+                    whereclause: whereclause.map(|(clause, _)| clause),
+                };
+
+                (enumdef, span)
+            })
     }
 }
 
