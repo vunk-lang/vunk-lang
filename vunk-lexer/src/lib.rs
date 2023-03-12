@@ -41,6 +41,7 @@ pub enum Token {
     Match,
     When,
     Type,
+    Enum,
     ListOpen,
     ListClose,
 
@@ -82,6 +83,7 @@ impl std::fmt::Display for Token {
             Match => write!(f, "match"),
             When => write!(f, "when"),
             Type => write!(f, "type"),
+            Enum => write!(f, "enum"),
         }
     }
 }
@@ -158,6 +160,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
     let kw_match = just("match").map(|_| Token::Match);
     let kw_when = just("when").map(|_| Token::When);
     let kw_type = just("type").map(|_| Token::Type);
+    let kw_enum = just("enum").map(|_| Token::Enum);
     let blockopen = just("{").map(|_| Token::BlockOpen);
     let blockclose = just("}").map(|_| Token::BlockClose);
     let listopen = just("[").map(|_| Token::ListOpen);
@@ -183,6 +186,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
         .or(kw_match)
         .or(kw_when)
         .or(kw_type)
+        .or(kw_enum)
         .or(blockopen)
         .or(blockclose)
         .or(listopen)
