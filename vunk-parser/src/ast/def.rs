@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use chumsky::prelude::Simple;
+use chumsky::select;
 use chumsky::Parser;
 use vunk_lexer::Token;
 
@@ -22,10 +23,26 @@ pub struct Def {
 impl Def {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let i: Box<dyn Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>>> =
-            { unimplemented!() };
+        VariableName::parser()
+            .then_ignore({
+                select! {
+                    (Token::Assign, span) => ((), span)
+                }
+            })
+            .then(DefRhs::parser())
+            .map(|((var_name, var_name_span), (def_rhs, def_rhs_span))| {
+                let span = std::ops::Range {
+                    start: var_name_span.start,
+                    end: def_rhs_span.end,
+                };
 
-        std::sync::Arc::new(i)
+                let def = Def {
+                    lhs: var_name,
+                    rhs: def_rhs,
+                };
+
+                (def, span)
+            })
     }
 }
 
