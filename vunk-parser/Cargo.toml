@@ -9,3 +9,8 @@ license.workspace = true
 tokio = { workspace = true, features = ["fs"] }
 tracing.workspace = true
 
+chumsky = "0.9.2"
+
+vunk-ast = { path = "../vunk-ast" }
+vunk-lexer = { path = "../vunk-lexer" }
+
