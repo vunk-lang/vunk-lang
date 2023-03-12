@@ -4,10 +4,6 @@
 
 pub mod ast;
 
-use chumsky::error::Simple;
-use chumsky::Parser;
-
 use vunk_lexer::Span;
-use vunk_lexer::Token;
 
 pub type Spanned<T> = (T, Span);
