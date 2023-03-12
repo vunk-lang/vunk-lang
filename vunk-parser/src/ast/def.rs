@@ -136,12 +136,122 @@ pub enum DefArgType {
     Func { args: Vec<DefArg>, retty: TypeName },
 }
 
+impl DefArgType {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        let type_name_parser =
+            TypeName::parser().map(|(tn, span)| (DefArgType::TypeName(tn), span));
+
+        let func_parser = {
+            let par_open = select! {
+                (Token::ParOpen, span) => ((), span)
+            };
+
+            let par_close = select! {
+                (Token::ParClose, span) => ((), span)
+            };
+
+            let arrow = select! {
+                (Token::Arrow, span) => ((), span)
+            };
+
+            let comma = select! {
+                (Token::Comma, span) => ((), span)
+            };
+
+            par_open
+                .ignore_then(DefArg::parser().separated_by(comma))
+                .then_ignore(par_close)
+                .then_ignore(arrow)
+                .then(TypeName::parser())
+                .map(|(args, (retty, retty_span))| {
+                    let span = std::ops::Range {
+                        start: args
+                            .first()
+                            .map(|tpl| tpl.1.start)
+                            .unwrap_or(retty_span.start),
+                        end: retty_span.end,
+                    };
+
+                    let func = DefArgType::Func {
+                        args: args.into_iter().map(|tpl| tpl.0).collect(),
+                        retty,
+                    };
+
+                    (func, span)
+                })
+        };
+
+        chumsky::recursive::recursive(|_tree| type_name_parser.or(func_parser))
+    }
+}
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeDef {
     pub name: TypeName,
     pub members: Vec<DefArg>,
-    pub generics: Option<WhereClause>,
+    pub generics: Vec<TypeName>,
+    pub whereclause: Option<WhereClause>,
+}
+
+impl TypeDef {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        let type_kw = select! {
+            (Token::Type, span) => ((), span)
+        };
+        let comma = select! {
+            (Token::Comma, span) => ((), span)
+        };
+        let assign = select! {
+            (Token::Assign, span) => ((), span)
+        };
+        let block_open = select! {
+            (Token::BlockOpen, span) => ((), span)
+        };
+        let block_close = select! {
+            (Token::BlockClose, span) => ((), span)
+        };
+
+        type_kw
+            .ignore_then(TypeName::parser())
+            .then({
+                // Generics
+                TypeName::parser().repeated().or_not()
+            })
+            .then(WhereClause::parser().or_not())
+            .then_ignore(assign)
+            .then_ignore(block_open)
+            .then(DefArg::parser().separated_by(comma))
+            .then_ignore(block_close)
+            .map(
+                |((((type_name, type_span), generics), whereclause), members)| {
+                    let span = std::ops::Range {
+                        start: type_span.start,
+                        end: members
+                            .iter()
+                            .rev()
+                            .next()
+                            .map(|(_, span)| span.end)
+                            .unwrap_or(type_span.end),
+                    };
+
+                    let typedef = TypeDef {
+                        name: type_name,
+                        members: members.into_iter().map(|tpl| tpl.0).collect(),
+                        generics: generics
+                            .unwrap_or_default()
+                            .into_iter()
+                            .map(|tpl| tpl.0)
+                            .collect(),
+                        whereclause: whereclause.map(|(clause, _)| clause),
+                    };
+
+                    (typedef, span)
+                },
+            )
+    }
 }
 
 #[derive(Debug)]
