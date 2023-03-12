@@ -59,3 +59,13 @@ pub struct TypeImpl {
     pub generics: Option<WhereClause>,
     pub members: Vec<Def>,
 }
+
+impl TypeImpl {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        let i: Box<dyn Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>>> =
+            { unimplemented!() };
+
+        std::sync::Arc::new(i)
+    }
+}
