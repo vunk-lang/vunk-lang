@@ -1,0 +1,54 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# A simple type
+type Person =
+    { name: String
+    , age: u8
+    }
+
+# A generic bucket type where the inner type has to implement Debug
+type Bucket T
+    where T: Std.Fmt.Debug
+    =
+    { element: T
+    }
+
+# A simple enum
+enum Decision
+    = Yes
+    | No
+    | Undecided
+
+
+# A generic enum type where with trait bounds
+enum DebugResult O E
+    where O: Std.Fmt.Debug
+          E: Std.Fmt.Debug
+    = Ok O
+    | Err E
+
+
+# A simple function
+# without type declaration
+func_a a = a + 1
+
+# A simple function
+# with type declaration
+func_b: Int -> Int
+func_b a = a + 1
+
+
+# A simple function
+# with type declaration and generics
+func_c: (C) -> C
+    where C: Std.Op.Add
+func_c a = a + 1
+
+# A less simple function
+# with type declaration and generics
+func_d: (C, C) -> C
+    where C: Std.Op.Add
+func_d a b: a + b
+
