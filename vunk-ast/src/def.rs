@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::expr::Expr;
+use crate::generic::WhereClause;
 use crate::name::TypeName;
 use crate::name::VariableName;
 
@@ -32,4 +33,12 @@ pub struct DefArg {
 pub enum DefArgType {
     TypeName(TypeName),
     Func { args: Vec<DefArg>, retty: TypeName },
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct TypeDef {
+    pub name: TypeName,
+    pub members: Vec<DefArg>,
+    pub generics: Option<WhereClause>,
 }
