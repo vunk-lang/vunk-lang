@@ -119,7 +119,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
         .map(Token::Str);
 
     // A parser for control characters (delimiters, semicolons, etc.)
-    let ctrl = one_of("(),").map(|c| Token::Ctrl(c));
+    let ctrl = one_of("(),").map(Token::Ctrl);
 
     let operator = {
         let op_add = just('+').map(|c| Token::Op(c.to_string()));
