@@ -30,6 +30,7 @@ pub enum Token {
     Str(String),
 
     If,
+    Then,
     Else,
 
     Let,
@@ -75,6 +76,7 @@ impl std::fmt::Display for Token {
             Else => write!(f, "else"),
             Ident(s) => write!(f, "{}", s),
             If => write!(f, "if"),
+            Then => write!(f, "then"),
             In => write!(f, "in"),
             Let => write!(f, "let"),
             Num(n) => write!(f, "{}", n),
@@ -169,6 +171,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
     let kw_let = just("let").map(|_| Token::Let);
     let kw_in = just("in").map(|_| Token::In);
     let kw_if = just("if").map(|_| Token::If);
+    let kw_then = just("then").map(|_| Token::Then);
     let kw_else = just("else").map(|_| Token::Else);
     let kw_true = just("true").map(|_| Token::Bool(true));
     let kw_false = just("false").map(|_| Token::Bool(false));
@@ -201,6 +204,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
         .or(kw_let)
         .or(kw_in)
         .or(kw_if)
+        .or(kw_then)
         .or(kw_else)
         .or(kw_true)
         .or(kw_false)
