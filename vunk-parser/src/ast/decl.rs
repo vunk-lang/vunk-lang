@@ -259,4 +259,19 @@ mod tests {
         assert_eq!(decl.visibility, Visibility::Private);
         assert_eq!(decl.lhs, VariableName(String::from("foo")));
     }
+
+    #[test]
+    fn test_decl_rhs_parser() {
+        let code = r#"
+            bar;
+        "#;
+
+        let parser = DeclRhs::parser();
+        let tokens = vunk_lexer::lexer().parse(code).unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        let rhs = parsed.0;
+
+        assert_eq!(rhs, DeclRhs::Variable(VariableName(String::from("bar"))));
+    }
 }
