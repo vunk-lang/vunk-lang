@@ -20,9 +20,6 @@ pub enum Token {
     Ident(String),
 
     Arrow,
-    Assign,
-    Declare,
-    Plus,
     Ctrl(char),
     Op(String),
 
@@ -36,29 +33,18 @@ pub enum Token {
     Let,
     In,
 
-    ParOpen,
-    ParClose,
-    BlockOpen,
-    BlockClose,
-    Alternative,
     Where,
     Match,
     When,
     Type,
     Impl,
     Enum,
-    ListOpen,
-    ListClose,
 
     Bool(bool),
 
     Use,
     Pub,
     Mod,
-
-    Separator,
-    Comma,
-    StatementEnd,
 
     Comment(String),
 }
@@ -70,9 +56,6 @@ impl std::fmt::Display for Token {
         match self {
             Comment(text) => write!(f, "# {}", text),
             Arrow => write!(f, "->"),
-            Assign => write!(f, "="),
-            Declare => write!(f, ":"),
-            Plus => write!(f, "+"),
             Bool(x) => write!(f, "{}", x),
             Ctrl(c) => write!(f, "{}", c),
             Else => write!(f, "else"),
@@ -86,16 +69,6 @@ impl std::fmt::Display for Token {
             Op(s) => write!(f, "{}", s),
             Use => write!(f, "use"),
             Pub => write!(f, "pub"),
-            Comma => write!(f, ","),
-            StatementEnd => write!(f, ";"),
-            Separator => write!(f, "."),
-            ParOpen => write!(f, "("),
-            ParClose => write!(f, ")"),
-            BlockOpen => write!(f, "{{"),
-            BlockClose => write!(f, "}}"),
-            ListOpen => write!(f, "["),
-            ListClose => write!(f, "]"),
-            Alternative => write!(f, "|"),
             Where => write!(f, "where"),
             Match => write!(f, "match"),
             When => write!(f, "when"),
@@ -121,7 +94,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
         .map(Token::Str);
 
     // A parser for control characters (delimiters, semicolons, etc.)
-    let ctrl = one_of("(),").map(Token::Ctrl);
+    let ctrl = one_of("(),=:+.;[]{}|").map(Token::Ctrl);
 
     let operator = {
         let op_add = just('+').map(|c| Token::Op(c.to_string()));
@@ -164,12 +137,6 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
             .or(op_join)
     };
 
-    let assign = just("=").map(|_| Token::Assign);
-    let declare = just(":").map(|_| Token::Declare);
-    let plus = just("+").map(|_| Token::Plus);
-    let separator = just(".").map(|_| Token::Separator);
-    let comma = just(",").map(|_| Token::Comma);
-    let statement_end = just(";").map(|_| Token::StatementEnd);
     let kw_use = just("use").map(|_| Token::Use);
     let kw_pub = just("pub").map(|_| Token::Pub);
     let kw_arrow = just("->").map(|_| Token::Arrow);
@@ -187,24 +154,11 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
     let kw_impl = just("impl").map(|_| Token::Impl);
     let kw_enum = just("enum").map(|_| Token::Enum);
     let kw_mod = just("mod").map(|_| Token::Mod);
-    let paropen = just("(").map(|_| Token::ParOpen);
-    let parclose = just(")").map(|_| Token::ParClose);
-    let blockopen = just("{").map(|_| Token::BlockOpen);
-    let blockclose = just("}").map(|_| Token::BlockClose);
-    let listopen = just("[").map(|_| Token::ListOpen);
-    let listclose = just("]").map(|_| Token::ListClose);
-    let alternative = just("|").map(|_| Token::Alternative);
     let ident = ident().map(Token::Ident);
 
     // A single token can be one of the above
     let token = num
         .or(str_)
-        .or(assign)
-        .or(declare)
-        .or(plus)
-        .or(separator)
-        .or(comma)
-        .or(statement_end)
         .or(kw_use)
         .or(kw_pub)
         .or(kw_arrow)
@@ -222,13 +176,6 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
         .or(kw_type)
         .or(kw_enum)
         .or(kw_mod)
-        .or(paropen)
-        .or(parclose)
-        .or(blockopen)
-        .or(blockclose)
-        .or(listopen)
-        .or(listclose)
-        .or(alternative)
         .or(ctrl)
         .or(operator)
         .or(ident)
