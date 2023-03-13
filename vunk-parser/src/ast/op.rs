@@ -20,10 +20,20 @@ pub enum UnaryOp {
 impl UnaryOp {
     pub fn parser() -> impl Parser<Spanned<Token>, Spanned<UnaryOp>, Error = Simple<Spanned<Token>>> + Clone {
         chumsky::select! {
-            (Token::Op(op), span) => match op.as_ref() {
-                "~" => (UnaryOp::BinaryNot, span),
-                "!" => (UnaryOp::LogicalNot, span),
-                _ => return Err(chumsky::error::Error::expected_input_found(span, None, None)),
+            (Token::Op(op), span) => {
+                let span: std::ops::Range<usize> = span;
+
+                match op.as_ref() {
+                    "~" => (UnaryOp::BinaryNot, span),
+                    "!" => (UnaryOp::LogicalNot, span),
+                    _ => {
+                        use chumsky::error::Error;
+
+                        let op = Token::Op(op);
+                        let found: Option<Spanned<Token>> = Some((op, span.clone()));
+                        return Err(chumsky::error::Simple::expected_input_found(span, None, found))
+                    },
+                }
             }
         }
     }
