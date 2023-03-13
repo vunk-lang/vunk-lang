@@ -50,3 +50,35 @@ pub enum BinaryOp {
     BitXor,
     Join,
 }
+
+impl BinaryOp {
+    pub fn parser() -> impl Parser<Spanned<Token>, Spanned<BinaryOp>, Error = Simple<Spanned<Token>>> + Clone {
+        chumsky::select! {
+            (Token::Op(op), span) => match op.as_ref() {
+                "+" => (BinaryOp::Add, span),
+                "-" => (BinaryOp::Sub, span),
+                "*" => (BinaryOp::Mul, span),
+                "/" => (BinaryOp::Div, span),
+                "%" => (BinaryOp::Rem, span),
+                "==" => (BinaryOp::Eq, span),
+                "!=" => (BinaryOp::NotEq, span),
+                "<"=> (BinaryOp::Less, span),
+                "<=" => (BinaryOp::LessEq, span),
+                ">"=> (BinaryOp::More, span),
+                ">=" => (BinaryOp::MoreEq, span),
+
+                "&"=> (BinaryOp::BitAnd, span),
+                "&&" => (BinaryOp::LogicalAnd, span),
+                "|"=> (BinaryOp::BitOr, span),
+                "||" => (BinaryOp::LogicalOr, span),
+
+                "^"=> (BinaryOp::BitXor, span),
+
+                "++" => (BinaryOp::Join, span),
+
+                // TODO: Make nice
+                _ => return Err(chumsky::error::Error::expected_input_found(span, None, None)),
+            }
+        }
+    }
+}
