@@ -30,7 +30,7 @@ The goal of this project is to implement a
 
 programming language.
 
-Think Rust + Haskell + Ruby.
+The general idea is to have a Rust-inspired functional language.
 
 For some code examples, have a look at the `vunk-examples` directory (which is
 also used to test the components of the implementation (lexer, parser, ...)).
