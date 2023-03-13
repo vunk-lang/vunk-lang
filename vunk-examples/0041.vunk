@@ -36,12 +36,12 @@ enum Age =
 trait Ageing =
     { # With only one function, that takes an object of an implementing type
       # and returns the same type of object
-      ageing: (Self) -> Self
+      ageing: (Self) -> Self;
     }
 
 
 impl Ageing on Person = # and now lets implement that trait on the "Person" type
-    { ageing: (Person) -> Person # the function takes and returns "Person"
+    { ageing: (Person) -> Person; # the function takes and returns "Person"
       # objects of course
       # That type declaration is not necessary, but nice to be able to grep for
 
@@ -55,32 +55,32 @@ impl Ageing on Person = # and now lets implement that trait on the "Person" type
             # When the Age is `Age.Unknown`, we leave it at that
             when Age.Unknown -> Age.Unknown
         # And with that `newage`, we construct a new `Person` object
-        in Person { name, age: newage }
+        in Person { name, age: newage };
     }
 
 
 # And now again on the `Animal` type
 impl Ageing on Animal =
-    { ageing: (Animal) -> Animal
+    { ageing: (Animal) -> Animal;
       ageing = (Animal { name, age }) -> let
           newage = match age
             when Age.Value { age } -> Value { age: age + 1 }
             # ... but here we use `else` in the match, because we know that `Age` will
             # never have more variants than `Value` and `Unknown`
             else Age.Unknown
-        in Animal { name, age: newage }
+        in Animal { name, age: newage };
     }
 
 
 # Lets have another trait
 trait Printable =
-    { toString: (self: Self) -> String # which takes an object of the implementor
+    { toString: (self: Self) -> String; # which takes an object of the implementor
       # (note that the `self:` part above is not necessary
     }
 
 # ... and implement that on Person
 impl Printable on Person =
-    { toString: (self: Self) -> String # optional, but nice to have
+    { toString: (self: Self) -> String; # optional, but nice to have
       toString = (self) -> let
           name = self.name
           age = match self.age
@@ -90,19 +90,19 @@ impl Printable on Person =
           # In the implementation, we call `String.fmt` from the stdlib to do string interpolation.
           # The function takes a format str and an array or map of elements to interpolate.
           # Maybe this will be changed.
-          String.fmt "{} is {} old" [name age]
+          String.fmt "{} is {} old" [name age];
     }
 
 
 # And again on Animal
 impl Printable on Animal =
-    { toString: (self: Self) -> String
+    { toString: (self: Self) -> String;
       toString = (self) -> let
           name = self.name
           age = match self.age
             when Value { age } -> String.from age
             else "a bit"
-        in String.fmt "{} is {} old" [name age]
+        in String.fmt "{} is {} old" [name age];
     }
 
 
@@ -112,18 +112,18 @@ impl Printable on Animal =
 # When implementing generic functions, the signature is required.
 # When implementing non-generic functions, the signature will be inferred from the implementation
 grow_old: (A) -> A
-    where A: Ageing
-grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a)
+    where A: Ageing;
+grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a);
 
 
 # Now lets define a variable "old_person" of type "Person" which is implemented by calling
 # `grow_old` on a new instance of `Person`
-old_person: Person
-old_person = grow_old (Person { name: "Jon", age: (Age.Value { age: 22 }) })
+old_person: Person;
+old_person = grow_old (Person { name: "Jon", age: (Age.Value { age: 22 }) });
 
 # And the same for an animal
-old_cat: Animal
-old_cat = grow_old $ Animal { name: "Billy", age: Age.Unknown }
+old_cat: Animal;
+old_cat = grow_old $ Animal { name: "Billy", age: Age.Unknown };
 
 # In the main function implementation (note that there's no declaration of types here), we
 # take no arguments and implement the function by calling `println` on a string that is
@@ -133,5 +133,5 @@ old_cat = grow_old $ Animal { name: "Billy", age: Age.Unknown }
 # Not yet sure about the actual syntax here, because `main` has of course to be some IO thing (Monads, yay!)
 # and `println` comes from the stdlib of course...
 main = () ->
-  println $ String.concat $ map Printable.toString [old_person old_cat]
+  println $ String.concat $ map Printable.toString [old_person old_cat];
 

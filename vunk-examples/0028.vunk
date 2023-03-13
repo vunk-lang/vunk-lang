@@ -3,5 +3,5 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 main = (args: Std.Args) ->
-    Std.IO.println $ Std.String.join ", " $ Std.Iter.Iterator.map Std.String.toUpper args
+    Std.IO.println $ Std.String.join ", " $ Std.Iter.Iterator.map Std.String.toUpper args;
 

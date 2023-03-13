@@ -10,5 +10,5 @@ main = (args: Std.Args) ->
         list: Std.Vec String
         list = Std.String.Join "," iter
     in
-    Std.IO.println list
+    Std.IO.println list;
 

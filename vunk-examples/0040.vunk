@@ -22,64 +22,64 @@ enum Age =
     | Unknown
 
 trait Ageing =
-    { ageing: (Self) -> Self
+    { ageing: (Self) -> Self;
     }
 
 impl Ageing on Person =
-    { ageing: (Person) -> Person
+    { ageing: (Person) -> Person;
       ageing = (Person { name, age }) -> let
           newage = match age
             when Age.Value { age } -> Value { age: age + 1 }
             when Age.Unknown -> Age.Unknown
-        in Person { name, age: newage }
+        in Person { name, age: newage };
     }
 
 impl Ageing on Animal =
-    { ageing: (Animal) -> Animal
+    { ageing: (Animal) -> Animal;
       ageing = (Animal { name, age }) -> let
           newage = match age
             when Age.Value { age } -> Value { age: age + 1 }
             else Age.Unknown
-        in Animal { name, age: newage }
+        in Animal { name, age: newage };
     }
 
 
 trait Printable =
-    { toString: (self: Self) -> String
+    { toString: (self: Self) -> String;
     }
 
 impl Printable on Person =
-    { toString: (self: Self) -> String
+    { toString: (self: Self) -> String;
       toString = (self) -> let
           name = self.name
           age = match self.age
             when Value { age } -> String.from age
             else "very"
-        in String.fmt "{} is {} old" [name age]
+        in String.fmt "{} is {} old" [name age];
     }
 
 
 impl Printable on Animal =
-    { toString: (self: Self) -> String
+    { toString: (self: Self) -> String;
       toString = (self) -> let
           name = self.name
           age = match self.age
             when Value { age } -> String.from age
             else "a bit"
-        in String.fmt "{} is {} old" [name age]
+        in String.fmt "{} is {} old" [name age];
     }
 
 grow_old: (A) -> A
-    where A: Ageing
-grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a)
+    where A: Ageing;
+grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a);
 
 
-old_person: Person
-old_person = grow_old (Person { name: "Jon", age: (Age.Value { age: 22 }) })
+old_person: Person;
+old_person = grow_old (Person { name: "Jon", age: (Age.Value { age: 22 }) });
 
-old_cat: Animal
-old_cat = grow_old $ Animal { name: "Billy", age: Age.Unknown }
+old_cat: Animal;
+old_cat = grow_old $ Animal { name: "Billy", age: Age.Unknown };
 
 main = () ->
-  println $ String.concat $ map Printable.toString [old_person old_cat]
+  println $ String.concat $ map Printable.toString [old_person old_cat];
 

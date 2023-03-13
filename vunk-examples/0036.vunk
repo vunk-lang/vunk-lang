@@ -5,12 +5,12 @@
 # Same as 0033, but with interfaces in mapper function and no types in the
 # argument list
 
-use Std.Args
-use Std.Env
-use Std.IO.println
-use Std.Iter.Iterator
-use Std.Iter.Iterator.map
-use Std.String
+use Std.Args;
+use Std.Env;
+use Std.IO.println;
+use Std.Iter.Iterator;
+use Std.Iter.Iterator.map;
+use Std.String;
 
 main = (args: Args, env: Env) ->
     let
@@ -26,5 +26,5 @@ main = (args: Args, env: Env) ->
         chained: Iterator String
         chained = chain iter_args iter_env
     in
-    println chained
+    println chained;
 
