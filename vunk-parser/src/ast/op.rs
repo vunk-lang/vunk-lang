@@ -12,36 +12,9 @@ use crate::Spanned;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub enum UnaryOp {
+pub enum Op {
     BinaryNot,
     LogicalNot,
-}
-
-impl UnaryOp {
-    pub fn parser() -> impl Parser<Spanned<Token>, Spanned<UnaryOp>, Error = Simple<Spanned<Token>>> + Clone {
-        chumsky::select! {
-            (Token::Op(op), span) => {
-                let span: std::ops::Range<usize> = span;
-
-                match op.as_ref() {
-                    "~" => (UnaryOp::BinaryNot, span),
-                    "!" => (UnaryOp::LogicalNot, span),
-                    _ => {
-                        use chumsky::error::Error;
-
-                        let op = Token::Op(op);
-                        let found: Option<Spanned<Token>> = Some((op, span.clone()));
-                        return Err(chumsky::error::Simple::expected_input_found(span, None, found))
-                    },
-                }
-            }
-        }
-    }
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub enum BinaryOp {
     Add,
     Sub,
     Mul,
@@ -61,40 +34,40 @@ pub enum BinaryOp {
     Join,
 }
 
-impl BinaryOp {
-    pub fn parser() -> impl Parser<Spanned<Token>, Spanned<BinaryOp>, Error = Simple<Spanned<Token>>> + Clone {
+impl Op {
+    pub fn parser() -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         chumsky::select! {
             (Token::Op(op), span) => {
                 let span: std::ops::Range<usize> = span;
+
                 match op.as_ref() {
-                    "+" => (BinaryOp::Add, span),
-                    "-" => (BinaryOp::Sub, span),
-                    "*" => (BinaryOp::Mul, span),
-                    "/" => (BinaryOp::Div, span),
-                    "%" => (BinaryOp::Rem, span),
-                    "==" => (BinaryOp::Eq, span),
-                    "!=" => (BinaryOp::NotEq, span),
-                    "<"=> (BinaryOp::Less, span),
-                    "<=" => (BinaryOp::LessEq, span),
-                    ">"=> (BinaryOp::More, span),
-                    ">=" => (BinaryOp::MoreEq, span),
+                    "~" => (Op::BinaryNot, span),
+                    "!" => (Op::LogicalNot, span),
+                    "+" => (Op::Add, span),
+                    "-" => (Op::Sub, span),
+                    "*" => (Op::Mul, span),
+                    "/" => (Op::Div, span),
+                    "%" => (Op::Rem, span),
+                    "==" => (Op::Eq, span),
+                    "!=" => (Op::NotEq, span),
+                    "<"=> (Op::Less, span),
+                    "<=" => (Op::LessEq, span),
+                    ">"=> (Op::More, span),
+                    ">=" => (Op::MoreEq, span),
 
-                    "&"=> (BinaryOp::BitAnd, span),
-                    "&&" => (BinaryOp::LogicalAnd, span),
-                    "|"=> (BinaryOp::BitOr, span),
-                    "||" => (BinaryOp::LogicalOr, span),
+                    "&"=> (Op::BitAnd, span),
+                    "&&" => (Op::LogicalAnd, span),
+                    "|"=> (Op::BitOr, span),
+                    "||" => (Op::LogicalOr, span),
 
-                    "^"=> (BinaryOp::BitXor, span),
+                    "^"=> (Op::BitXor, span),
 
-                    "++" => (BinaryOp::Join, span),
-
-                    // TODO: Make nice
+                    "++" => (Op::Join, span),
                     _ => {
                         use chumsky::error::Error;
 
                         let op = Token::Op(op);
                         let found: Option<Spanned<Token>> = Some((op, span.clone()));
-
                         return Err(chumsky::error::Simple::expected_input_found(span, None, found))
                     },
                 }
@@ -102,3 +75,4 @@ impl BinaryOp {
         }
     }
 }
+
