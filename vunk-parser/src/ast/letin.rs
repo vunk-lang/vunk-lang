@@ -76,9 +76,9 @@ mod tests {
     fn test_letins_parser() {
         let code = r#"
             let
-                foo = bar
+                foo = bar;
             in
-            foo
+            foo;
         "#;
 
         let parser = LetIns::parser();

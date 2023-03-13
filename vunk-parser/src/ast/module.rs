@@ -10,6 +10,7 @@ use crate::Spanned;
 
 use super::name::TypeName;
 use super::util::separator;
+use super::util::statement_end;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -19,6 +20,7 @@ impl Module {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         TypeName::parser().separated_by(separator())
+            .then_ignore(statement_end())
             .map(|typelist| {
                 let span = std::ops::Range {
                     start: typelist.first().map(|(_, span)| span.start).unwrap_or(0),
