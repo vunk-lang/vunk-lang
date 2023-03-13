@@ -11,28 +11,33 @@ useful down the road. Who knows?
 
 The goal of this project is to implement a
 
-* low level[^1]
-* strongly typed[^2]
-* purely functional[^3]
-* easy[^4]
+* low level
+    * Interfacing with C ABI is possible
+    * Writing an OS is not possible (at least it is not a goal YET)
+* strongly typed
+    * Errors should happen at compiletime, like with Rust
+    * Type inference is heavily used
+* (purely) functional
+    * There are no sideeffects
+    * Monads are used for modeling sideeffects
+    * Currying and partial function application is possible, happens at
+        compiletime
+* easy
+    * Easy to read and write, only few concepts to understand
+    * Safe (and zero-cost) abstractions can be built (like with Rust)
+    * (Compiler-)Error messages are as helpful as possible
 * with LLVM compiled
 
 programming language.
 
-Think Rust + Haskell + Ruby.
+The general idea is to have a Rust-inspired functional language.
 
 For some code examples, have a look at the `vunk-examples` directory (which is
 also used to test the components of the implementation (lexer, parser, ...)).
 
-[^1]: One can interface with C ABIs
-[^2]: Errors should happen at compiletime, not at runtime
-[^3]: There should be no sideeffects in the language
-[^4]: Easy to read and write, only few concepts to understand
-
-
 ## Language Features
 
-Planned language features:
+Planned language features/ideas:
 
 * [ ] Functions
     * [ ] Partial function application / Currying
@@ -58,16 +63,24 @@ Planned language features:
             * [ ] u128
             * [ ] isize
             * [ ] usize
-        * [ ] String
+        * [ ] String types
+            * [ ] UTF-8 encoded
+            * [ ] Like Rusts `str`, `String`, ...
         * [ ] Option
         * [ ] Result
-        * [ ] Vec
-        * [ ] HashMap
-    * [ ] "Interfaces"
-        * [ ] Functor
-        * [ ] Applicative
-        * [ ] Monoid
-        * [ ] Monad
+        * [ ] Collection types
+            * [ ] Vec
+            * [ ] HashMap
+    * [ ] Traits
+        * [ ] Conversion
+            * [ ] `From` / `Into`
+            * [ ] `TryFrom` / `TryInto`
+            * [ ] `FromStr`
+        * [ ] More functional stuff
+            * [ ] Functor
+            * [ ] Applicative
+            * [ ] Monoid
+            * [ ] Monad
 
 ... and more.
 
