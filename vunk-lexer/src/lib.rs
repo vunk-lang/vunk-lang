@@ -191,7 +191,7 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
     let listopen = just("[").map(|_| Token::ListOpen);
     let listclose = just("]").map(|_| Token::ListClose);
     let alternative = just("|").map(|_| Token::Alternative);
-    let ident = ident().map(|ident: String| Token::Ident(ident));
+    let ident = ident().map(Token::Ident);
 
     // A single token can be one of the above
     let token = num
