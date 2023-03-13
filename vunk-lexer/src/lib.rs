@@ -16,7 +16,7 @@ pub type Span = std::ops::Range<usize>;
 pub type Spanned<T> = (T, Span);
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Token {
+pub enum Token<'src> {
     Ident(String),
 
     Arrow,
@@ -24,7 +24,7 @@ pub enum Token {
     Declare,
     Plus,
     Ctrl(char),
-    Op(String),
+    Op(&'src str),
 
     Num(String),
     Str(String),
@@ -63,7 +63,7 @@ pub enum Token {
     Comment(String),
 }
 
-impl std::fmt::Display for Token {
+impl std::fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use Token::*;
 
@@ -107,9 +107,9 @@ impl std::fmt::Display for Token {
     }
 }
 
-pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
+pub fn lexer<'src>() -> impl Parser<&'src str, Vec<Spanned<Token<'src>>>, Error = Simple<&'src str>> {
     let num = text::int(10)
-        .chain::<char, _, _>(just('.').chain(text::digits(10)).or_not().flatten())
+        .chain::<&'src str, _, _>(just(".").chain(text::digits(10)).or_not().flatten())
         .collect::<String>()
         .map(Token::Num);
 
@@ -124,26 +124,26 @@ pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
     let ctrl = one_of("(),").map(Token::Ctrl);
 
     let operator = {
-        let op_add = just('+').map(|c| Token::Op(c.to_string()));
-        let op_sub = just('-').map(|c| Token::Op(c.to_string()));
-        let op_mul = just('*').map(|c| Token::Op(c.to_string()));
-        let op_div = just('/').map(|c| Token::Op(c.to_string()));
-        let op_rem = just('%').map(|c| Token::Op(c.to_string()));
-        let op_eq = just("==").map(|c| Token::Op(c.to_string()));
-        let op_neq = just("!=").map(|c| Token::Op(c.to_string()));
-        let op_less = just('<').map(|c| Token::Op(c.to_string()));
-        let op_less_eq = just("<=").map(|c| Token::Op(c.to_string()));
-        let op_more = just('>').map(|c| Token::Op(c.to_string()));
-        let op_more_eq = just(">=").map(|c| Token::Op(c.to_string()));
+        let op_add = just("+").map(|c| Token::Op(c));
+        let op_sub = just("-").map(|c| Token::Op(c));
+        let op_mul = just("*").map(|c| Token::Op(c));
+        let op_div = just("/").map(|c| Token::Op(c));
+        let op_rem = just("%").map(|c| Token::Op(c));
+        let op_eq = just("==").map(|c| Token::Op(c));
+        let op_neq = just("!=").map(|c| Token::Op(c));
+        let op_less = just("<").map(|c| Token::Op(c));
+        let op_less_eq = just("<=").map(|c| Token::Op(c));
+        let op_more = just(">").map(|c| Token::Op(c));
+        let op_more_eq = just(">=").map(|c| Token::Op(c));
 
-        let op_bit_and = just('&').map(|c| Token::Op(c.to_string()));
-        let op_logical_and = just("&&").map(|c| Token::Op(c.to_string()));
-        let op_bit_or = just('|').map(|c| Token::Op(c.to_string()));
-        let op_logical_or = just("||").map(|c| Token::Op(c.to_string()));
+        let op_bit_and = just("&").map(|c| Token::Op(c));
+        let op_logical_and = just("&&").map(|c| Token::Op(c));
+        let op_bit_or = just("|").map(|c| Token::Op(c));
+        let op_logical_or = just("||").map(|c| Token::Op(c));
 
-        let op_bit_xor = just('^').map(|c| Token::Op(c.to_string()));
+        let op_bit_xor = just("^").map(|c| Token::Op(c));
 
-        let op_join = just("++").map(|c| Token::Op(c.to_string()));
+        let op_join = just("++").map(|c| Token::Op(c));
 
         op_add
             .or(op_sub)
