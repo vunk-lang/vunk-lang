@@ -2,12 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use Std.Args
-use Std.Env
-use Std.IO.println
-use Std.Iter.Iterator
-use Std.Iter.Iterator.map
-use Std.String
+use Std.Args;
+use Std.Env;
+use Std.IO.println;
+use Std.Iter.Iterator;
+use Std.Iter.Iterator.map;
+use Std.String;
 
 main = (args: Args, env: Env) ->
     let
@@ -24,5 +24,5 @@ main = (args: Args, env: Env) ->
         chained: Iterator String
         chained = chain iter_args iter_env
     in
-    println chained
+    println chained;
 

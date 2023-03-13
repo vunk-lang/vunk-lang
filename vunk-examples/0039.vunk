@@ -13,7 +13,7 @@ type Animal =
     }
 
 trait Ageing =
-    { ageing: (Self) -> Self
+    { ageing: (Self) -> Self;
     }
 
 impl Ageing on Person =
@@ -27,13 +27,13 @@ impl Ageing on Aninmal =
     }
 
 grow_old: (A) -> A
-    where A: Ageing
-grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a)
+    where A: Ageing;
+grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a);
 
 
-old_person: Person
-old_person = grow_old (Person { name: "Jon", age: 22 })
+old_person: Person;
+old_person = grow_old (Person { name: "Jon", age: 22 });
 
-old_cat: Animal
-old_cat = grow_old (Animal { name: "Billy", age: 2 })
+old_cat: Animal;
+old_cat = grow_old (Animal { name: "Billy", age: 2 });
 

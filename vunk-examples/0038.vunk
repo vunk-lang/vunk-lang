@@ -7,6 +7,6 @@ type Person =
     , age: u8
     }
 
-newborn: (String) -> Person
-newborn = (name) -> Person { name, age = 0 }
+newborn: (String) -> Person;
+newborn = (name) -> Person { name, age = 0 };
 

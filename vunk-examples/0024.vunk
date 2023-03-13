@@ -3,26 +3,26 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 # a is a fn that takes two i64 and returns one i64
-a: (i64, i64) -> i64
-a = (a: i64, b: i64) -> a + b
+a: (i64, i64) -> i64;
+a = (a: i64, b: i64) -> a + b;
 
 # b is a fn that takes one i64 and returns a function that takes a i64 and
 # returns a i64
-b: (i64) -> (i64) -> i64
-b = (a: i64) -> (b: i64) -> a + b
+b: (i64) -> (i64) -> i64;
+b = (a: i64) -> (b: i64) -> a + b;
 
 # c is a fn that takes a fn that takes a i64 and returns a i64
 # and returns a fn that takes two i64 and returns a i64
-c: ((i64) -> i64) -> (i64, i64) -> i64
-c = (f: (i64) -> i64) -> (x: i64, y: i64) -> f (a x y)
+c: ((i64) -> i64) -> (i64, i64) -> i64;
+c = (f: (i64) -> i64) -> (x: i64, y: i64) -> f (a x y);
 
 # d, e, f are equivalent
 
-d: (i64, i64, i64) -> i64
-d = (x: i64, y: i64, z: i64) -> (c (b x)) y z
+d: (i64, i64, i64) -> i64;
+d = (x: i64, y: i64, z: i64) -> (c (b x)) y z;
 
-e: (i64, i64, i64) -> i64
-e = (x: i64, y: i64, z: i64) -> c (b x) y z
+e: (i64, i64, i64) -> i64;
+e = (x: i64, y: i64, z: i64) -> c (b x) y z;
 
-f: (i64, i64, i64) -> i64
-f = (x: i64, y: i64, z: i64) -> c b x y z
+f: (i64, i64, i64) -> i64;
+f = (x: i64, y: i64, z: i64) -> c b x y z;

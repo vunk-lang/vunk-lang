@@ -2,11 +2,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use Std.$
-use Std.Args
-use Std.II.println
-use Std.Iter.Iterator.map
-use Std.String.join
-use Std.String.toUpper
+use Std.$;
+use Std.Args;
+use Std.II.println;
+use Std.Iter.Iterator.map;
+use Std.String.join;
+use Std.String.toUpper;
 
-main = (args: Args) -> println $ join ", " $ map (e: toUpper e) args
+main = (args: Args) -> println $ join ", " $ map (e: toUpper e) args;

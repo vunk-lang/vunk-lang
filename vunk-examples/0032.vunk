@@ -2,16 +2,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use Std.Args
-use Std.IO.println
-use Std.Iter.Iterator
-use Std.Iter.Iterator.map
-use Std.String
+use Std.Args;
+use Std.IO.println;
+use Std.Iter.Iterator;
+use Std.Iter.Iterator.map;
+use Std.String;
 
 main = (args: Args) ->
     let
         iter: Iterator String
         iter = map String.toUpper args
     in
-    println iter
+    println iter;
 
