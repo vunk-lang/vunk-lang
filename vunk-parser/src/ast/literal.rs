@@ -148,7 +148,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_list() {
+    fn test_parse_literal_list() {
         let parser = parse_list();
         let tokens = vunk_lexer::lexer().parse("[ a ]").unwrap();
         let parsed = parser.parse(tokens).unwrap();
@@ -157,6 +157,54 @@ mod tests {
         if let Literal::List(list) = parsed.0 {
             assert_eq!(list.len(), 1);
             assert!(matches!(list[0], Expr::Variable(VariableName(_))));
+        } else {
+            unreachable!()
+        }
+    }
+
+    #[test]
+    fn test_parse_literal_bool() {
+        let code = "true";
+        let parser = Literal::parser();
+        let tokens = vunk_lexer::lexer().parse(code).unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        assert!(matches!(parsed.0, Literal::Bool(Bool { value: true })));
+
+        let code = "false";
+        let parser = Literal::parser();
+        let tokens = vunk_lexer::lexer().parse(code).unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        assert!(matches!(parsed.0, Literal::Bool(Bool { value: false })));
+    }
+
+    #[test]
+    fn test_parse_literal_integer() {
+        let code = "123";
+        let parser = Literal::parser();
+        let tokens = vunk_lexer::lexer().parse(code).unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        assert!(matches!(
+            parsed.0,
+            Literal::Integer(Integer {
+                value: IntegerValue::I8(123)
+            })
+        ));
+    }
+
+    #[test]
+    fn test_parse_literal_str() {
+        let code = r#""foo""#;
+        let parser = Literal::parser();
+        let tokens = vunk_lexer::lexer().parse(code).unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        assert!(matches!(parsed.0, Literal::Str(Str { .. })));
+
+        if let Literal::Str(s) = parsed.0 {
+            assert_eq!(s.value, "foo");
         } else {
             unreachable!()
         }
