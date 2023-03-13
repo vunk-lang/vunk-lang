@@ -37,7 +37,7 @@ also used to test the components of the implementation (lexer, parser, ...)).
 
 ## Language Features
 
-Planned language features:
+Planned language features/ideas:
 
 * [ ] Functions
     * [ ] Partial function application / Currying
@@ -63,16 +63,24 @@ Planned language features:
             * [ ] u128
             * [ ] isize
             * [ ] usize
-        * [ ] String
+        * [ ] String types
+            * [ ] UTF-8 encoded
+            * [ ] Like Rusts `str`, `String`, ...
         * [ ] Option
         * [ ] Result
-        * [ ] Vec
-        * [ ] HashMap
-    * [ ] "Interfaces"
-        * [ ] Functor
-        * [ ] Applicative
-        * [ ] Monoid
-        * [ ] Monad
+        * [ ] Collection types
+            * [ ] Vec
+            * [ ] HashMap
+    * [ ] Traits
+        * [ ] Conversion
+            * [ ] `From` / `Into`
+            * [ ] `TryFrom` / `TryInto`
+            * [ ] `FromStr`
+        * [ ] More functional stuff
+            * [ ] Functor
+            * [ ] Applicative
+            * [ ] Monoid
+            * [ ] Monad
 
 ... and more.
 
