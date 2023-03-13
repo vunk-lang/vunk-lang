@@ -44,3 +44,13 @@ pub struct TypePath(pub Vec<TypeName>);
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TraitName(pub String);
+
+impl TraitName {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<TraitName>, Error = Simple<Spanned<Token>>> + Clone
+    {
+        chumsky::select! {
+            (Token::Ident(s), span) => (TraitName(s), span),
+        }
+    }
+}
