@@ -106,3 +106,11 @@ pub fn separator() -> impl Parser<Spanned<Token>, Spanned<()>, Error = Simple<Sp
     }
 }
 
+pub fn statement_end() -> impl Parser<Spanned<Token>, Spanned<()>, Error = Simple<Spanned<Token>>> + Clone
+{
+    select! {
+        (Token::Ctrl(';'), span) => ((), span)
+    }
+}
+
+

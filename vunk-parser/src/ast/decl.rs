@@ -22,6 +22,7 @@ use super::util::declare;
 use super::util::kw_impl;
 use super::util::par_close;
 use super::util::par_open;
+use super::util::statement_end;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -40,6 +41,7 @@ impl Decl {
             .then_ignore(declare())
             .then(DeclType::parser())
             .then(WhereClause::parser().or_not())
+            .then_ignore(statement_end())
             .map(
                 |(
                     (((vis, vis_span), (varname, _varname_span)), (declty, declty_span)),

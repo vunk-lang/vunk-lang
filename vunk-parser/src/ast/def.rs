@@ -23,6 +23,7 @@ use super::util::kw_enum;
 use super::util::kw_type;
 use super::util::par_close;
 use super::util::par_open;
+use super::util::statement_end;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -37,6 +38,7 @@ impl Def {
         VariableName::parser()
             .then_ignore(assign())
             .then(DefRhs::parser())
+            .then_ignore(statement_end())
             .map(|((var_name, var_name_span), (def_rhs, def_rhs_span))| {
                 let span = std::ops::Range {
                     start: var_name_span.start,
