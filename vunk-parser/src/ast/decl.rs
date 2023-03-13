@@ -3,25 +3,28 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use chumsky::prelude::Simple;
-use chumsky::Parser;
 use chumsky::select;
+use chumsky::Parser;
 use vunk_lexer::Token;
 
 use crate::ast::def::Def;
+use crate::ast::expr::Expr;
 use crate::ast::generic::WhereClause;
+use crate::ast::ifelse::IfElse;
+use crate::ast::letin::LetIns;
+use crate::ast::literal::Literal;
+use crate::ast::module::Module;
 use crate::ast::name::TypeName;
 use crate::ast::name::VariableName;
+use crate::ast::op::BinaryOp;
+use crate::ast::op::UnaryOp;
 use crate::Spanned;
 
-use super::util::arrow;
 use super::util::assign;
 use super::util::block_close;
 use super::util::block_open;
-use super::util::comma;
 use super::util::declare;
 use super::util::kw_impl;
-use super::util::par_close;
-use super::util::par_open;
 use super::util::statement_end;
 
 #[derive(Debug)]
@@ -29,42 +32,44 @@ use super::util::statement_end;
 pub struct Decl {
     pub visibility: Visibility,
     pub lhs: VariableName,
-    pub rhs: DeclType,
+    pub rhs: DeclRhs,
     pub whereclause: Option<WhereClause>,
 }
 
 impl Decl {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        Visibility::parser()
-            .then(VariableName::parser())
-            .then_ignore(declare())
-            .then(DeclType::parser())
-            .then(WhereClause::parser().or_not())
-            .then_ignore(statement_end())
-            .map(
-                |(
-                    (((vis, vis_span), (varname, _varname_span)), (declty, declty_span)),
-                    opt_where,
-                )| {
-                    let span = std::ops::Range {
-                        start: vis_span.start,
-                        end: opt_where
-                            .as_ref()
-                            .map(|tpl| tpl.1.end)
-                            .unwrap_or(declty_span.end),
-                    };
+        chumsky::recursive::recursive(|_| {
+            Visibility::parser()
+                .then(VariableName::parser())
+                .then_ignore(declare())
+                .then(DeclRhs::parser())
+                .then(WhereClause::parser().or_not())
+                .then_ignore(statement_end())
+                .map(
+                    |(
+                        (((vis, vis_span), (varname, _varname_span)), (rhs, rhs_span)),
+                        opt_where,
+                    )| {
+                        let span = std::ops::Range {
+                            start: vis_span.start,
+                            end: opt_where
+                                .as_ref()
+                                .map(|tpl| tpl.1.end)
+                                .unwrap_or(rhs_span.end),
+                        };
 
-                    let decl = Decl {
-                        visibility: vis,
-                        lhs: varname,
-                        rhs: declty,
-                        whereclause: opt_where.map(|tpl| tpl.0),
-                    };
+                        let decl = Decl {
+                            visibility: vis,
+                            lhs: varname,
+                            rhs,
+                            whereclause: opt_where.map(|tpl| tpl.0),
+                        };
 
-                    (decl, span)
-                },
-            )
+                        (decl, span)
+                    },
+                )
+        })
     }
 }
 
@@ -85,75 +90,78 @@ impl Visibility {
     }
 }
 
+/// An Expr without Def and Decl
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub enum DeclType {
-    TypeName(TypeName),
-    Func { args: Vec<DeclArg>, retty: TypeName },
+pub enum DeclRhs {
+    Variable(VariableName),
+    Unary(UnaryOp, Box<Expr>),
+    Binary(BinaryOp, Box<Expr>, Box<Expr>),
+    Literal(Literal),
+    LetIn(LetIns),
+    IfElse(IfElse),
+    Module(Module),
 }
 
-impl DeclType {
+impl DeclRhs {
     pub fn parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let type_name_parser = TypeName::parser().map(|(type_name, type_name_span)| {
-            let dty = DeclType::TypeName(type_name);
-            (dty, type_name_span)
-        });
+        let variable_parser = VariableName::parser().map(|(v, span)| (DeclRhs::Variable(v), span));
 
-        let func_parser = par_open()
-            .ignore_then(DeclArg::parser().separated_by(comma()))
-            .then_ignore(par_close())
-            .then_ignore(arrow())
-            .then(TypeName::parser())
-            .map(|(args, (retty, retty_span))| {
+        let unary_parser = UnaryOp::parser()
+            .then(Expr::parser().map(|(e, span)| (Box::new(e), span)))
+            .map(|((op, opspan), (ex, exspan))| {
                 let span = std::ops::Range {
-                    start: args.first().map(|tpl| tpl.1.start).unwrap_or(0),
-                    end: retty_span.end,
+                    start: opspan.start,
+                    end: exspan.end,
                 };
 
-                let decl_type = DeclType::Func {
-                    args: args.into_iter().map(|tpl| tpl.0).collect(),
-                    retty,
-                };
-
-                (decl_type, span)
+                let e = DeclRhs::Unary(op, ex);
+                (e, span)
             });
 
-        type_name_parser.or(func_parser)
-    }
-}
+        let binary_parser = Expr::parser()
+            .map(|(e, span)| (Box::new(e), span))
+            .then(BinaryOp::parser())
+            .then(Expr::parser().map(|(e, span)| (Box::new(e), span)))
+            .map(|(((exl, _exlspan), (op, _opspan)), (exr, exrspan))| {
+                let span = std::ops::Range {
+                    start: exrspan.start,
+                    end: exrspan.end,
+                };
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct DeclArg {
-    pub name: Option<VariableName>,
-    pub ty: DeclType,
-}
+                let e = DeclRhs::Binary(op, exl, exr);
+                (e, span)
+            });
 
-impl DeclArg {
-    pub fn parser(
-    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        chumsky::recursive::recursive(|_tree| {
-            VariableName::parser()
-                .or_not()
-                .then(DeclType::parser())
-                .map(|(opt_var_name, (decl_type, decl_type_span))| {
-                    let span = std::ops::Range {
-                        start: opt_var_name
-                            .as_ref()
-                            .map(|tpl| tpl.1.start)
-                            .unwrap_or(decl_type_span.start),
-                        end: decl_type_span.end,
-                    };
+        let literal_parser = Literal::parser().map(|(lit, span)| {
+            let e = DeclRhs::Literal(lit);
+            (e, span)
+        });
 
-                    let decl_arg = DeclArg {
-                        name: opt_var_name.map(|tpl| tpl.0),
-                        ty: decl_type,
-                    };
+        let letin_parser = LetIns::parser().map(|(li, span)| {
+            let e = DeclRhs::LetIn(li);
+            (e, span)
+        });
 
-                    (decl_arg, span)
-                })
-        })
+        let ifelse_parser = IfElse::parser().map(|(ie, span)| {
+            let e = DeclRhs::IfElse(ie);
+            (e, span)
+        });
+
+        let module_parser = Module::parser().map(|(m, span)| {
+            let e = DeclRhs::Module(m);
+            (e, span)
+        });
+
+        variable_parser
+            .or(unary_parser)
+            .or(binary_parser)
+            .or(literal_parser)
+            .or(letin_parser)
+            .or(ifelse_parser)
+            .or(module_parser)
+            .then_ignore(statement_end())
     }
 }
 
