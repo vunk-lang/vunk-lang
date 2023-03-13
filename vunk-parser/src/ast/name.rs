@@ -27,6 +27,16 @@ impl VariableName {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeName(pub String);
 
+impl TypeName {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<TypeName>, Error = Simple<Spanned<Token>>> + Clone
+    {
+        chumsky::select! {
+            (Token::Ident(s), span) => (TypeName(s), span),
+        }
+    }
+}
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypePath(pub Vec<TypeName>);
