@@ -10,6 +10,8 @@ use crate::literal::Str;
 use crate::op::BinaryOp;
 use crate::op::UnaryOp;
 
+type SpannedExpr = crate::Spanned<Expr>;
+
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum Expr {
@@ -17,40 +19,40 @@ pub enum Expr {
     Integer(Integer),
     Float(Float),
     Str(Str),
-    List(Vec<crate::expr::Expr>),
+    List(Vec<SpannedExpr>),
 
     Ident(String),
 
     Unary {
         op: UnaryOp,
-        expr: Box<Expr>,
+        expr: Box<SpannedExpr>,
     },
 
     Binary {
-        lhs: Box<Expr>,
+        lhs: Box<SpannedExpr>,
         op: BinaryOp,
-        rhs: Box<Expr>,
+        rhs: Box<SpannedExpr>,
     },
 
     LetIn {
-        exprs: Vec<Expr>,
+        exprs: Vec<SpannedExpr>,
     },
 
     IfElse {
-        condition: Box<Expr>,
-        tru: Box<Expr>,
-        fals: Box<Expr>,
+        condition: Box<SpannedExpr>,
+        tru: Box<SpannedExpr>,
+        fals: Box<SpannedExpr>,
     },
 
     TypeDef {
         name: String,
         whereclause: Option<WhereClause>,
-        members: Vec<Expr>,
+        members: Vec<SpannedExpr>,
     },
 
     EnumDef {
         name: String,
-        variants: Vec<Expr>,
+        variants: Vec<SpannedExpr>,
         whereclause: Option<WhereClause>,
     },
 
@@ -84,5 +86,5 @@ pub struct DeclArg {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct DefRhs {
     pub args: Vec<(String, DeclType)>,
-    pub expr: Box<Expr>,
+    pub expr: Box<SpannedExpr>,
 }
