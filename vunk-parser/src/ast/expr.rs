@@ -2,14 +2,15 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::ast::decl::Decl;
+use crate::ast::decl::DeclType;
 use crate::ast::def::Def;
+use crate::ast::generic::WhereClause;
 use crate::ast::op::BinaryOp;
 use crate::ast::op::UnaryOp;
 
 use crate::ast::literal::Bool;
-use crate::ast::literal::Integer;
 use crate::ast::literal::Float;
+use crate::ast::literal::Integer;
 use crate::ast::literal::Str;
 
 #[derive(Debug)]
@@ -44,6 +45,11 @@ pub enum Expr {
         fals: Box<Expr>,
     },
 
-    Decl(Decl),
+    Decl {
+        ident: String,
+        decl_type: DeclType,
+        whereclause: Option<WhereClause>,
+    },
+
     Def(Def),
 }

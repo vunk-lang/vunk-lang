@@ -7,14 +7,6 @@ use crate::ast::generic::WhereClause;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct Decl {
-    pub lhs: VariableName,
-    pub rhs: DeclType,
-    pub whereclause: Option<WhereClause>,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
 pub enum DeclType {
     TypeName(String),
     Func { args: Vec<DeclArg>, retty: String },
