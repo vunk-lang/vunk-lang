@@ -45,6 +45,12 @@ pub enum Expr {
         fals: Box<Expr>,
     },
 
+    TypeDef {
+        name: String,
+        whereclause: Option<WhereClause>,
+        members: Vec<Expr>,
+    },
+
     Decl {
         ident: String,
         decl_type: DeclType,
