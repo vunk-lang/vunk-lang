@@ -260,3 +260,59 @@ impl OpRhs {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::ast::literal::{Integer, IntegerValue};
+
+    use super::*;
+
+    #[test]
+    fn test_unaryop_parser() {
+        let code = r#"
+            !foo
+        "#;
+
+        let parser = UnaryOp::parser();
+        let tokens = vunk_lexer::lexer().parse(code).unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        let UnaryOp { operator, rhs } = parsed.0;
+
+        assert_eq!(operator, UnaryOperator::LogicalNot);
+        assert!(matches!(*rhs, OpRhs::Variable(VariableName(_))));
+        let OpRhs::Variable(VariableName(name)) = *rhs else {
+            unreachable!()
+        };
+
+        assert_eq!(name, "foo");
+    }
+
+
+    #[test]
+    fn test_binaryop_parser() {
+        let code = r#"
+            1 + 2
+        "#;
+
+        let parser = BinaryOp::parser();
+        let tokens = vunk_lexer::lexer().parse(code).unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        let BinaryOp { operator, lhs, rhs } = parsed.0;
+
+        assert_eq!(operator, BinaryOperator::Add);
+
+        assert!(matches!(*lhs, OpLhs::Literal(Literal::Integer(_))));
+        let OpLhs::Literal(Literal::Integer(a)) = *lhs else {
+            unreachable!()
+        };
+        assert_eq!(a, Integer { value: IntegerValue::I8(1) });
+
+        assert!(matches!(*rhs, OpRhs::Literal(Literal::Integer(_))));
+        let OpRhs::Literal(Literal::Integer(b)) = *rhs else {
+            unreachable!()
+        };
+        assert_eq!(b, Integer { value: IntegerValue::I8(2) });
+    }
+}
