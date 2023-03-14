@@ -19,8 +19,6 @@ use crate::ast::op::BinaryOp;
 use crate::ast::op::UnaryOp;
 use crate::Spanned;
 
-use super::op::OpLhs;
-use super::op::OpRhs;
 use super::util::assign;
 use super::util::block_close;
 use super::util::block_open;
@@ -96,8 +94,8 @@ impl Visibility {
 #[cfg_attr(test, derive(PartialEq))]
 pub enum DeclRhs {
     Variable(VariableName),
-    Unary(UnaryOp, OpRhs),
-    Binary(BinaryOp, OpLhs, OpRhs),
+    Unary(UnaryOp),
+    Binary(BinaryOp),
     Literal(Literal),
     LetIn(LetIns),
     IfElse(IfElse),
@@ -121,38 +119,20 @@ impl DeclRhs {
 
     fn unary_parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        chumsky::recursive::recursive(|_| {
-            let unary_parser =
-                UnaryOp::parser()
-                    .then(OpRhs::parser())
-                    .map(|((op, opspan), (l, lspan))| {
-                        let span = std::ops::Range {
-                            start: opspan.start,
-                            end: lspan.end,
-                        };
+        let unary_parser = UnaryOp::parser().map(|(op, span)| {
+            let e = DeclRhs::Unary(op);
+            (e, span)
+        });
 
-                        let e = DeclRhs::Unary(op, l);
-                        (e, span)
-                    });
-
-            unary_parser
-        })
+        unary_parser
     }
 
     fn binary_parser(
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
-        let binary_parser = OpLhs::parser()
-            .then(BinaryOp::parser())
-            .then(OpRhs::parser())
-            .map(|(((l, _lspan), (op, _opspan)), (r, rspan))| {
-                let span = std::ops::Range {
-                    start: rspan.start,
-                    end: rspan.end,
-                };
-
-                let e = DeclRhs::Binary(op, l, r);
-                (e, span)
-            });
+        let binary_parser = BinaryOp::parser().map(|(op, span)| {
+            let e = DeclRhs::Binary(op);
+            (e, span)
+        });
 
         binary_parser
     }
@@ -275,6 +255,8 @@ impl TypeImplMember {
 
 #[cfg(test)]
 mod tests {
+    use crate::ast::op::{UnaryOperator, OpRhs, BinaryOperator, OpLhs};
+
     use super::*;
 
     #[test]
@@ -318,9 +300,12 @@ mod tests {
         let tokens = vunk_lexer::lexer().parse(code).unwrap();
         let parsed = parser.parse(tokens).unwrap();
 
-        let rhs = parsed.0;
+        let DeclRhs::Unary(UnaryOp { operator, rhs }) = parsed.0 else {
+            unreachable!()
+        };
 
-        assert!(matches!(rhs, DeclRhs::Unary(UnaryOp::LogicalNot, OpRhs::Variable(_))));
+        assert_eq!(operator, UnaryOperator::LogicalNot);
+        assert!(matches!(*rhs, OpRhs::Variable(_)));
     }
 
     #[test]
@@ -333,8 +318,12 @@ mod tests {
         let tokens = vunk_lexer::lexer().parse(code).unwrap();
         let parsed = parser.parse(tokens).unwrap();
 
-        let rhs = parsed.0;
+        let DeclRhs::Binary(BinaryOp { operator, lhs, rhs }) = parsed.0 else {
+            unreachable!()
+        };
 
-        assert!(matches!(rhs, DeclRhs::Binary(BinaryOp::Add, OpLhs::Variable(_), OpRhs::Variable(_))));
+        assert_eq!(operator, BinaryOperator::Add);
+        assert!(matches!(*lhs, OpLhs::Variable(_)));
+        assert!(matches!(*rhs, OpRhs::Variable(_)));
     }
 }

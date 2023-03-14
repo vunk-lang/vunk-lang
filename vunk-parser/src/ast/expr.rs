@@ -15,8 +15,6 @@ use crate::ast::module::Module;
 use crate::ast::name::VariableName;
 use crate::ast::op::BinaryOp;
 use crate::ast::op::UnaryOp;
-use crate::ast::op::OpLhs;
-use crate::ast::op::OpRhs;
 use crate::Spanned;
 
 
@@ -24,8 +22,8 @@ use crate::Spanned;
 #[cfg_attr(test, derive(PartialEq))]
 pub enum Expr {
     Variable(VariableName),
-    Unary(UnaryOp, OpRhs),
-    Binary(BinaryOp, OpLhs, OpRhs),
+    Unary(UnaryOp),
+    Binary(BinaryOp),
     Literal(Literal),
     LetIn(LetIns),
     IfElse(IfElse),
@@ -41,27 +39,14 @@ impl Expr {
             let variable_parser = VariableName::parser().map(|(v, span)| (Expr::Variable(v), span));
 
             let unary_parser = UnaryOp::parser()
-                .then(OpRhs::parser())
-                .map(|((op, opspan), (rhs, rhsspan))| {
-                    let span = std::ops::Range {
-                        start: opspan.start,
-                        end: rhsspan.end,
-                    };
-
-                    let e = Expr::Unary(op, rhs);
+                .map(|(op, span)| {
+                    let e = Expr::Unary(op);
                     (e, span)
                 });
 
-            let binary_parser = OpLhs::parser()
-                .then(BinaryOp::parser())
-                .then(OpRhs::parser())
-                .map(|(((l, _lspan), (op, _opspan)), (r, rspan))| {
-                    let span = std::ops::Range {
-                        start: rspan.start,
-                        end: rspan.end,
-                    };
-
-                    let e = Expr::Binary(op, l, r);
+            let binary_parser = BinaryOp::parser()
+                .map(|(op, span)| {
+                    let e = Expr::Binary(op);
                     (e, span)
                 });
 

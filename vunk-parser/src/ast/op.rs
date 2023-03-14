@@ -15,21 +15,49 @@ use super::name::VariableName;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub enum UnaryOp {
-    BinaryNot,
-    LogicalNot,
+pub struct UnaryOp {
+    pub operator: UnaryOperator,
+    pub rhs: Box<OpRhs>,
 }
 
 impl UnaryOp {
     pub fn parser(
-    ) -> impl Parser<Spanned<Token>, Spanned<UnaryOp>, Error = Simple<Spanned<Token>>> + Clone {
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        UnaryOperator::parser().then(OpRhs::parser()).map(
+            |((unary_op, unary_op_span), (rhs, rhs_span))| {
+                let span = std::ops::Range {
+                    start: unary_op_span.start,
+                    end: rhs_span.end,
+                };
+
+                let e = UnaryOp {
+                    operator: unary_op,
+                    rhs: Box::new(rhs),
+                };
+
+                (e, span)
+            },
+        )
+    }
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum UnaryOperator {
+    BinaryNot,
+    LogicalNot,
+}
+
+impl UnaryOperator {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         chumsky::select! {
             (Token::Op(op), span) => {
                 let span: std::ops::Range<usize> = span;
 
                 match op.as_ref() {
-                    "~" => (UnaryOp::BinaryNot, span),
-                    "!" => (UnaryOp::LogicalNot, span),
+                    "~" => (Self::BinaryNot, span),
+                    "!" => (Self::LogicalNot, span),
                     _ => {
                         use chumsky::error::Error;
 
@@ -45,7 +73,40 @@ impl UnaryOp {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub enum BinaryOp {
+pub struct BinaryOp {
+    pub lhs: Box<OpLhs>,
+    pub operator: BinaryOperator,
+    pub rhs: Box<OpRhs>,
+}
+
+impl BinaryOp {
+    pub fn parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        OpLhs::parser()
+            .then(BinaryOperator::parser())
+            .then(OpRhs::parser())
+            .map(
+                |(((lhs, lhs_span), (binary_op, _binary_op_span)), (rhs, rhs_span))| {
+                    let span = std::ops::Range {
+                        start: lhs_span.start,
+                        end: rhs_span.end,
+                    };
+
+                    let e = BinaryOp {
+                        lhs: Box::new(lhs),
+                        operator: binary_op,
+                        rhs: Box::new(rhs),
+                    };
+
+                    (e, span)
+                },
+            )
+    }
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum BinaryOperator {
     Add,
     Sub,
     Mul,
@@ -65,34 +126,33 @@ pub enum BinaryOp {
     Join,
 }
 
-impl BinaryOp {
+impl BinaryOperator {
     pub fn parser(
-    ) -> impl Parser<Spanned<Token>, Spanned<BinaryOp>, Error = Simple<Spanned<Token>>> + Clone
-    {
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         chumsky::select! {
             (Token::Op(op), span) => {
                 let span: std::ops::Range<usize> = span;
                 match op.as_ref() {
-                    "+" => (BinaryOp::Add, span),
-                    "-" => (BinaryOp::Sub, span),
-                    "*" => (BinaryOp::Mul, span),
-                    "/" => (BinaryOp::Div, span),
-                    "%" => (BinaryOp::Rem, span),
-                    "==" => (BinaryOp::Eq, span),
-                    "!=" => (BinaryOp::NotEq, span),
-                    "<"=> (BinaryOp::Less, span),
-                    "<=" => (BinaryOp::LessEq, span),
-                    ">"=> (BinaryOp::More, span),
-                    ">=" => (BinaryOp::MoreEq, span),
+                    "+" => (Self::Add, span),
+                    "-" => (Self::Sub, span),
+                    "*" => (Self::Mul, span),
+                    "/" => (Self::Div, span),
+                    "%" => (Self::Rem, span),
+                    "==" => (Self::Eq, span),
+                    "!=" => (Self::NotEq, span),
+                    "<"=> (Self::Less, span),
+                    "<=" => (Self::LessEq, span),
+                    ">"=> (Self::More, span),
+                    ">=" => (Self::MoreEq, span),
 
-                    "&"=> (BinaryOp::BitAnd, span),
-                    "&&" => (BinaryOp::LogicalAnd, span),
-                    "|"=> (BinaryOp::BitOr, span),
-                    "||" => (BinaryOp::LogicalOr, span),
+                    "&"=> (Self::BitAnd, span),
+                    "&&" => (Self::LogicalAnd, span),
+                    "|"=> (Self::BitOr, span),
+                    "||" => (Self::LogicalOr, span),
 
-                    "^"=> (BinaryOp::BitXor, span),
+                    "^"=> (Self::BitXor, span),
 
-                    "++" => (BinaryOp::Join, span),
+                    "++" => (Self::Join, span),
 
                     // TODO: Make nice
                     _ => {
@@ -167,8 +227,8 @@ impl OpLhs {
 #[cfg_attr(test, derive(PartialEq))]
 pub enum OpRhs {
     Variable(VariableName),
-    Unary(UnaryOp, Box<OpRhs>),
-    Binary(BinaryOp, Box<OpLhs>, Box<OpRhs>),
+    Unary(UnaryOp),
+    Binary(BinaryOp),
     Literal(Literal),
 }
 
@@ -178,31 +238,15 @@ impl OpRhs {
         chumsky::recursive::recursive(|_| {
             let variable_parser = VariableName::parser().map(|(v, span)| (Self::Variable(v), span));
 
-            let unary_parser = UnaryOp::parser()
-                .then(OpRhs::parser().map(|(e, span)| (Box::new(e), span)))
-                .map(|((op, opspan), (ex, exspan))| {
-                    let span = std::ops::Range {
-                        start: opspan.start,
-                        end: exspan.end,
-                    };
+            let unary_parser = UnaryOp::parser().map(|(op, span)| {
+                let e = Self::Unary(op);
+                (e, span)
+            });
 
-                    let e = Self::Unary(op, ex);
-                    (e, span)
-                });
-
-            let binary_parser = OpLhs::parser()
-                .map(|(e, span)| (Box::new(e), span))
-                .then(BinaryOp::parser())
-                .then(OpRhs::parser().map(|(e, span)| (Box::new(e), span)))
-                .map(|(((exl, _exlspan), (op, _opspan)), (exr, exrspan))| {
-                    let span = std::ops::Range {
-                        start: exrspan.start,
-                        end: exrspan.end,
-                    };
-
-                    let e = Self::Binary(op, exl, exr);
-                    (e, span)
-                });
+            let binary_parser = BinaryOp::parser().map(|(op, span)| {
+                let e = Self::Binary(op);
+                (e, span)
+            });
 
             let literal_parser = Literal::parser().map(|(lit, span)| {
                 let e = Self::Literal(lit);
