@@ -17,7 +17,7 @@ pub enum Expr {
     Bool(bool),
     Integer(Integer),
     Float(Float),
-    Str(Str),
+    Str(String),
     List(Vec<SpannedExpr>),
 
     Ident(String),

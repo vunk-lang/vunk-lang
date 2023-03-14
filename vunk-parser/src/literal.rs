@@ -21,7 +21,3 @@ pub enum Float {
     F32(f32),
     F64(f64),
 }
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct Str(String);
