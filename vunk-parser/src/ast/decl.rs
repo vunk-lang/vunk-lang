@@ -307,4 +307,34 @@ mod tests {
 
         assert_eq!(rhs, DeclRhs::Variable(VariableName(String::from("bar"))));
     }
+
+    #[test]
+    fn test_decl_rhs_unary_parser() {
+        let code = r#"
+            !foo
+        "#;
+
+        let parser = DeclRhs::unary_parser();
+        let tokens = vunk_lexer::lexer().parse(code).unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        let rhs = parsed.0;
+
+        assert!(matches!(rhs, DeclRhs::Unary(UnaryOp::LogicalNot, OpRhs::Variable(_))));
+    }
+
+    #[test]
+    fn test_decl_rhs_binary_parser() {
+        let code = r#"
+            foo + bar
+        "#;
+
+        let parser = DeclRhs::unary_parser();
+        let tokens = vunk_lexer::lexer().parse(code).unwrap();
+        let parsed = parser.parse(tokens).unwrap();
+
+        let rhs = parsed.0;
+
+        assert!(matches!(rhs, DeclRhs::Binary(BinaryOp::Add, OpLhs::Variable(_), OpRhs::Variable(_))));
+    }
 }
