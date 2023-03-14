@@ -25,8 +25,17 @@ pub enum Expr {
 
     Ident(String),
 
-    Unary(UnaryOp, Box<Expr>),
-    Binary(BinaryOp, Box<Expr>, Box<Expr>),
+    Unary {
+        op: UnaryOp,
+        expr: Box<Expr>,
+    },
+
+    Binary {
+        lhs: Box<Expr>,
+        op: BinaryOp,
+        rhs: Box<Expr>,
+    },
+
     LetIn(LetIns),
     IfElse(IfElse),
     Decl(Decl),
