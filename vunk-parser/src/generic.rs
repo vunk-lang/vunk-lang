@@ -4,11 +4,11 @@
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct WhereClause(pub Vec<String>);
+pub struct WhereClause<'src>(pub Vec<&'src str>);
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct Generic {
-    pub type_name: String,
-    pub where_clause: WhereClause,
+pub struct Generic<'src> {
+    pub type_name: &'src str,
+    pub where_clause: WhereClause<'src>,
 }
