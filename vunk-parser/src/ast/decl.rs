@@ -8,7 +8,6 @@ use chumsky::Parser;
 use vunk_lexer::Token;
 
 use crate::ast::def::Def;
-use crate::ast::expr::Expr;
 use crate::ast::generic::WhereClause;
 use crate::ast::ifelse::IfElse;
 use crate::ast::letin::LetIns;
@@ -20,6 +19,8 @@ use crate::ast::op::BinaryOp;
 use crate::ast::op::UnaryOp;
 use crate::Spanned;
 
+use super::op::OpLhs;
+use super::op::OpRhs;
 use super::util::assign;
 use super::util::block_close;
 use super::util::block_open;
@@ -95,8 +96,8 @@ impl Visibility {
 #[cfg_attr(test, derive(PartialEq))]
 pub enum DeclRhs {
     Variable(VariableName),
-    Unary(UnaryOp, Box<Expr>),
-    Binary(BinaryOp, Box<Expr>, Box<Expr>),
+    Unary(UnaryOp, OpRhs),
+    Binary(BinaryOp, OpLhs, OpRhs),
     Literal(Literal),
     LetIn(LetIns),
     IfElse(IfElse),
@@ -109,28 +110,27 @@ impl DeclRhs {
         let variable_parser = VariableName::parser().map(|(v, span)| (DeclRhs::Variable(v), span));
 
         let unary_parser = UnaryOp::parser()
-            .then(Expr::parser().map(|(e, span)| (Box::new(e), span)))
-            .map(|((op, opspan), (ex, exspan))| {
+            .then(OpRhs::parser())
+            .map(|((op, opspan), (l, lspan))| {
                 let span = std::ops::Range {
                     start: opspan.start,
-                    end: exspan.end,
+                    end: lspan.end,
                 };
 
-                let e = DeclRhs::Unary(op, ex);
+                let e = DeclRhs::Unary(op, l);
                 (e, span)
             });
 
-        let binary_parser = Expr::parser()
-            .map(|(e, span)| (Box::new(e), span))
+        let binary_parser = OpLhs::parser()
             .then(BinaryOp::parser())
-            .then(Expr::parser().map(|(e, span)| (Box::new(e), span)))
-            .map(|(((exl, _exlspan), (op, _opspan)), (exr, exrspan))| {
+            .then(OpRhs::parser())
+            .map(|(((l, _lspan), (op, _opspan)), (r, rspan))| {
                 let span = std::ops::Range {
-                    start: exrspan.start,
-                    end: exrspan.end,
+                    start: rspan.start,
+                    end: rspan.end,
                 };
 
-                let e = DeclRhs::Binary(op, exl, exr);
+                let e = DeclRhs::Binary(op, l, r);
                 (e, span)
             });
 

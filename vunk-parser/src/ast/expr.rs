@@ -15,14 +15,17 @@ use crate::ast::module::Module;
 use crate::ast::name::VariableName;
 use crate::ast::op::BinaryOp;
 use crate::ast::op::UnaryOp;
+use crate::ast::op::OpLhs;
+use crate::ast::op::OpRhs;
 use crate::Spanned;
+
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum Expr {
     Variable(VariableName),
-    Unary(UnaryOp, Box<Expr>),
-    Binary(BinaryOp, Box<Expr>, Box<Expr>),
+    Unary(UnaryOp, OpRhs),
+    Binary(BinaryOp, OpLhs, OpRhs),
     Literal(Literal),
     LetIn(LetIns),
     IfElse(IfElse),
@@ -38,28 +41,27 @@ impl Expr {
             let variable_parser = VariableName::parser().map(|(v, span)| (Expr::Variable(v), span));
 
             let unary_parser = UnaryOp::parser()
-                .then(Expr::parser().map(|(e, span)| (Box::new(e), span)))
-                .map(|((op, opspan), (ex, exspan))| {
+                .then(OpRhs::parser())
+                .map(|((op, opspan), (rhs, rhsspan))| {
                     let span = std::ops::Range {
                         start: opspan.start,
-                        end: exspan.end,
+                        end: rhsspan.end,
                     };
 
-                    let e = Expr::Unary(op, ex);
+                    let e = Expr::Unary(op, rhs);
                     (e, span)
                 });
 
-            let binary_parser = Expr::parser()
-                .map(|(e, span)| (Box::new(e), span))
+            let binary_parser = OpLhs::parser()
                 .then(BinaryOp::parser())
-                .then(Expr::parser().map(|(e, span)| (Box::new(e), span)))
-                .map(|(((exl, _exlspan), (op, _opspan)), (exr, exrspan))| {
+                .then(OpRhs::parser())
+                .map(|(((l, _lspan), (op, _opspan)), (r, rspan))| {
                     let span = std::ops::Range {
-                        start: exrspan.start,
-                        end: exrspan.end,
+                        start: rspan.start,
+                        end: rspan.end,
                     };
 
-                    let e = Expr::Binary(op, exl, exr);
+                    let e = Expr::Binary(op, l, r);
                     (e, span)
                 });
 
