@@ -4,12 +4,6 @@
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct Bool {
-    pub value: bool,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
 pub enum Integer {
     I8(i8),
     I16(i16),
