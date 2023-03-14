@@ -6,7 +6,6 @@ use crate::ast::decl::Decl;
 use crate::ast::def::Def;
 use crate::ast::ifelse::IfElse;
 use crate::ast::letin::LetIns;
-use crate::ast::name::VariableName;
 use crate::ast::op::BinaryOp;
 use crate::ast::op::UnaryOp;
 
@@ -24,7 +23,8 @@ pub enum Expr {
     Str(Str),
     List(Vec<crate::ast::expr::Expr>),
 
-    Variable(VariableName),
+    Ident(String),
+
     Unary(UnaryOp, Box<Expr>),
     Binary(BinaryOp, Box<Expr>, Box<Expr>),
     LetIn(LetIns),

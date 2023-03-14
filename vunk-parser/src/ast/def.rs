@@ -4,13 +4,11 @@
 
 use crate::ast::expr::Expr;
 use crate::ast::generic::WhereClause;
-use crate::ast::name::TypeName;
-use crate::ast::name::VariableName;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct Def {
-    pub lhs: VariableName,
+    pub lhs: String,
     pub rhs: DefRhs,
 }
 
@@ -24,21 +22,21 @@ pub struct DefRhs {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct DefArg {
-    pub name: VariableName,
+    pub name: String,
     pub ty: DefArgType,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum DefArgType {
-    TypeName(TypeName),
-    Func { args: Vec<DefArg>, retty: TypeName },
+    TypeName(String),
+    Func { args: Vec<DefArg>, retty: String },
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeDef {
-    pub name: TypeName,
+    pub name: String ,
     pub members: Vec<DefArg>,
     pub generics: Option<WhereClause>,
 }
@@ -46,7 +44,7 @@ pub struct TypeDef {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct EnumDef {
-    pub name: TypeName,
+    pub name: String,
     pub variants: Vec<EnumTypeDef>,
     pub whereclause: Option<WhereClause>,
 }
@@ -54,6 +52,6 @@ pub struct EnumDef {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct EnumTypeDef {
-    pub name: TypeName,
+    pub name: String,
     pub members: Vec<DefArg>,
 }

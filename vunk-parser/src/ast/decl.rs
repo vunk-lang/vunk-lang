@@ -4,8 +4,6 @@
 
 use crate::ast::def::Def;
 use crate::ast::generic::WhereClause;
-use crate::ast::name::TypeName;
-use crate::ast::name::VariableName;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -18,21 +16,21 @@ pub struct Decl {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum DeclType {
-    TypeName(TypeName),
-    Func { args: Vec<DeclArg>, retty: TypeName },
+    TypeName(String),
+    Func { args: Vec<DeclArg>, retty: String },
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct DeclArg {
-    pub name: Option<VariableName>,
+    pub name: Option<String>,
     pub ty: DeclType,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct TypeImpl {
-    pub name: TypeName,
+    pub name: String,
     pub generics: Option<WhereClause>,
     pub members: Vec<Def>,
 }
