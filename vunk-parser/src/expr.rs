@@ -3,7 +3,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 use crate::generic::WhereClause;
-use crate::literal::Bool;
 use crate::literal::Float;
 use crate::literal::Integer;
 use crate::literal::Str;
@@ -15,7 +14,7 @@ type SpannedExpr = crate::Spanned<Expr>;
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum Expr {
-    Bool(Bool),
+    Bool(bool),
     Integer(Integer),
     Float(Float),
     Str(Str),
