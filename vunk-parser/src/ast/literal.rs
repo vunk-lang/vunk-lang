@@ -4,29 +4,13 @@
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub enum Literal {
-    Bool(Bool),
-    Integer(Integer),
-    Float(Float),
-    Str(Str),
-    List(Vec<crate::ast::expr::Expr>),
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
 pub struct Bool {
     pub value: bool,
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct Integer {
-    pub value: IntegerValue,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub enum IntegerValue {
+pub enum Integer {
     I8(i8),
     I16(i16),
     I32(i32),
@@ -39,12 +23,11 @@ pub enum IntegerValue {
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct Float {
-    pub value: f64,
+pub enum Float {
+    F32(f32),
+    F64(f64),
 }
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct Str {
-    pub value: String,
-}
+pub struct Str(String);
