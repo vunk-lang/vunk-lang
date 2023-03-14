@@ -7,7 +7,6 @@ pub mod def;
 pub mod expr;
 pub mod generic;
 pub mod ifelse;
-pub mod letin;
 pub mod literal;
 pub mod op;
 pub mod program;
