@@ -51,6 +51,12 @@ pub enum Expr {
         members: Vec<Expr>,
     },
 
+    EnumDef {
+        name: String,
+        variants: Vec<Expr>,
+        whereclause: Option<WhereClause>,
+    },
+
     Decl {
         ident: String,
         decl_type: DeclType,
