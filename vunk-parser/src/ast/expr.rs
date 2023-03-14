@@ -4,7 +4,6 @@
 
 use crate::ast::decl::Decl;
 use crate::ast::def::Def;
-use crate::ast::ifelse::IfElse;
 use crate::ast::op::BinaryOp;
 use crate::ast::op::UnaryOp;
 
@@ -39,7 +38,12 @@ pub enum Expr {
         exprs: Vec<Expr>,
     },
 
-    IfElse(IfElse),
+    IfElse {
+        condition: Box<Expr>,
+        tru: Box<Expr>,
+        fals: Box<Expr>,
+    },
+
     Decl(Decl),
     Def(Def),
 }

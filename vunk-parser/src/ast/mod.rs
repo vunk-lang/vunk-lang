@@ -6,7 +6,6 @@ pub mod decl;
 pub mod def;
 pub mod expr;
 pub mod generic;
-pub mod ifelse;
 pub mod literal;
 pub mod op;
 pub mod program;
