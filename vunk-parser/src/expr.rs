@@ -2,14 +2,13 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use crate::ast::generic::WhereClause;
-use crate::ast::op::BinaryOp;
-use crate::ast::op::UnaryOp;
-
-use crate::ast::literal::Bool;
-use crate::ast::literal::Float;
-use crate::ast::literal::Integer;
-use crate::ast::literal::Str;
+use crate::generic::WhereClause;
+use crate::literal::Bool;
+use crate::literal::Float;
+use crate::literal::Integer;
+use crate::literal::Str;
+use crate::op::BinaryOp;
+use crate::op::UnaryOp;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -18,7 +17,7 @@ pub enum Expr {
     Integer(Integer),
     Float(Float),
     Str(Str),
-    List(Vec<crate::ast::expr::Expr>),
+    List(Vec<crate::expr::Expr>),
 
     Ident(String),
 
@@ -87,4 +86,3 @@ pub struct DefRhs {
     pub args: Vec<(String, DeclType)>,
     pub expr: Box<Expr>,
 }
-
