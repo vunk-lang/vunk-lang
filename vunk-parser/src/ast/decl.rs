@@ -109,18 +109,38 @@ impl DeclRhs {
     ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         let variable_parser = VariableName::parser().map(|(v, span)| (DeclRhs::Variable(v), span));
 
-        let unary_parser = UnaryOp::parser()
-            .then(OpRhs::parser())
-            .map(|((op, opspan), (l, lspan))| {
-                let span = std::ops::Range {
-                    start: opspan.start,
-                    end: lspan.end,
-                };
+        variable_parser
+            .or(Self::unary_parser())
+            .or(Self::binary_parser())
+            .or(Self::literal_parser())
+            .or(Self::letin_parser())
+            .or(Self::ifelse_parser())
+            .or(Self::module_parser())
+            .then_ignore(statement_end())
+    }
 
-                let e = DeclRhs::Unary(op, l);
-                (e, span)
-            });
+    fn unary_parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
+        chumsky::recursive::recursive(|_| {
+            let unary_parser =
+                UnaryOp::parser()
+                    .then(OpRhs::parser())
+                    .map(|((op, opspan), (l, lspan))| {
+                        let span = std::ops::Range {
+                            start: opspan.start,
+                            end: lspan.end,
+                        };
 
+                        let e = DeclRhs::Unary(op, l);
+                        (e, span)
+                    });
+
+            unary_parser
+        })
+    }
+
+    fn binary_parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         let binary_parser = OpLhs::parser()
             .then(BinaryOp::parser())
             .then(OpRhs::parser())
@@ -134,34 +154,47 @@ impl DeclRhs {
                 (e, span)
             });
 
+        binary_parser
+    }
+
+    fn literal_parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         let literal_parser = Literal::parser().map(|(lit, span)| {
             let e = DeclRhs::Literal(lit);
             (e, span)
         });
 
+        literal_parser
+    }
+
+    fn letin_parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         let letin_parser = LetIns::parser().map(|(li, span)| {
             let e = DeclRhs::LetIn(li);
             (e, span)
         });
 
+        letin_parser
+    }
+
+    fn ifelse_parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         let ifelse_parser = IfElse::parser().map(|(ie, span)| {
             let e = DeclRhs::IfElse(ie);
             (e, span)
         });
 
+        ifelse_parser
+    }
+
+    fn module_parser(
+    ) -> impl Parser<Spanned<Token>, Spanned<Self>, Error = Simple<Spanned<Token>>> + Clone {
         let module_parser = Module::parser().map(|(m, span)| {
             let e = DeclRhs::Module(m);
             (e, span)
         });
 
-        variable_parser
-            .or(unary_parser)
-            .or(binary_parser)
-            .or(literal_parser)
-            .or(letin_parser)
-            .or(ifelse_parser)
-            .or(module_parser)
-            .then_ignore(statement_end())
+        module_parser
     }
 }
 
