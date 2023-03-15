@@ -2,8 +2,6 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use std::str::FromStr;
-
 use chumsky::prelude::Rich;
 use chumsky::primitive::any;
 use chumsky::primitive::end;
@@ -20,9 +18,6 @@ use crate::literal::Float;
 use crate::literal::Integer;
 use crate::op::BinaryOp;
 use crate::op::UnaryOp;
-use crate::Spanned;
-
-type SpannedExpr<'src> = crate::Spanned<Expr<'src>>;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -31,40 +26,40 @@ pub enum Expr<'src> {
     Integer(Integer),
     Float(Float),
     Str(&'src str),
-    List(Vec<SpannedExpr<'src>>),
+    List(Vec<Expr<'src>>),
 
     Ident(&'src str),
 
     Unary {
         op: UnaryOp,
-        expr: Box<SpannedExpr<'src>>,
+        expr: Box<Expr<'src>>,
     },
 
     Binary {
-        lhs: Box<SpannedExpr<'src>>,
+        lhs: Box<Expr<'src>>,
         op: BinaryOp,
-        rhs: Box<SpannedExpr<'src>>,
+        rhs: Box<Expr<'src>>,
     },
 
     LetIn {
-        exprs: Vec<SpannedExpr<'src>>,
+        exprs: Vec<Expr<'src>>,
     },
 
     IfElse {
-        condition: Box<SpannedExpr<'src>>,
-        tru: Box<SpannedExpr<'src>>,
-        fals: Box<SpannedExpr<'src>>,
+        condition: Box<Expr<'src>>,
+        tru: Box<Expr<'src>>,
+        fals: Box<Expr<'src>>,
     },
 
     TypeDef {
         name: &'src str,
         whereclause: Option<WhereClause<'src>>,
-        members: Vec<SpannedExpr<'src>>,
+        members: Vec<Expr<'src>>,
     },
 
     EnumDef {
         name: &'src str,
-        variants: Vec<SpannedExpr<'src>>,
+        variants: Vec<Expr<'src>>,
         whereclause: Option<WhereClause<'src>>,
     },
 
@@ -101,7 +96,7 @@ pub struct DeclArg<'src> {
 #[cfg_attr(test, derive(PartialEq))]
 pub struct DefRhs<'src> {
     pub args: Vec<(&'src str, DeclType<'src>)>,
-    pub expr: Box<SpannedExpr<'src>>,
+    pub expr: Box<Expr<'src>>,
 }
 
 type ParserInput<'tokens, 'src> =
@@ -111,35 +106,46 @@ impl Expr<'_> {
     fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
         'tokens,
         ParserInput<'tokens, 'src>,
-        Spanned<Expr<'src>>,
+        Expr<'src>,
         chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
     > + Clone {
         chumsky::recursive::recursive(|expr| {
             let bool_parser = select! {
-                (Token::Bool(true), span) => (Expr::Bool(true), span),
-                (Token::Bool(false), span) => (Expr::Bool(false), span),
+                Token::Bool(true) => Expr::Bool(true),
+                Token::Bool(false) => Expr::Bool(false),
             };
 
-            let int_parser = select! {
-                (Token::Num(numstr), span) => {
-                    let span: std::ops::Range<_> = span;
-                    i8::from_str(&numstr)
-                     .map(Integer::I8)
-                     .or_else(|_| i16::from_str(&numstr).map(Integer::I16))
-                     .or_else(|_| i32::from_str(&numstr).map(Integer::I32))
-                     .or_else(|_| i64::from_str(&numstr).map(Integer::I64))
-                     .or_else(|_| u8::from_str(&numstr).map(Integer::U8))
-                     .or_else(|_| u16::from_str(&numstr).map(Integer::U16))
-                     .or_else(|_| u32::from_str(&numstr).map(Integer::U32))
-                     .or_else(|_| u64::from_str(&numstr).map(Integer::U64))
-                     .map(|i| (Expr::Integer(i), span))
-                     .map_err(|_| {
-                         Rich::custom(
-                             span.clone(),
-                             format!("Cannot parse number to Integer '{}'", numstr),
-                         )
-                     })
-                }
+            let int_parser = {
+                let numstr_parser = select! {
+                    Token::Num(numstr) => numstr,
+                };
+
+                let i8_parser = numstr_parser.from_str::<i8>()
+                    .map(|res| res.map(Integer::I8).unwrap());
+                let i16_parser = numstr_parser.from_str::<i16>()
+                    .map(|res| res.map(Integer::I16).unwrap());
+                let i32_parser = numstr_parser.from_str::<i32>()
+                    .map(|res| res.map(Integer::I32).unwrap());
+                let i64_parser = numstr_parser.from_str::<i64>()
+                    .map(|res| res.map(Integer::I64).unwrap());
+                let u8_parser = numstr_parser.from_str::<u8>()
+                    .map(|res| res.map(Integer::U8).unwrap());
+                let u16_parser = numstr_parser.from_str::<u16>()
+                    .map(|res| res.map(Integer::U16).unwrap());
+                let u32_parser = numstr_parser.from_str::<u32>()
+                    .map(|res| res.map(Integer::U32).unwrap());
+                let u64_parser = numstr_parser.from_str::<u64>()
+                    .map(|res| res.map(Integer::U64).unwrap());
+
+                i8_parser
+                    .or(i16_parser)
+                    .or(i32_parser)
+                    .or(i64_parser)
+                    .or(u8_parser)
+                    .or(u16_parser)
+                    .or(u32_parser)
+                    .or(u64_parser)
+                    .map(Expr::Integer)
             };
 
             // TODO: Support floats
@@ -147,7 +153,7 @@ impl Expr<'_> {
             // };
 
             let str_parser = select! {
-                Token::Str(s) => Expr::Str(s)
+                Token::Str(s) => Expr::Str(s),
             };
 
             let list_parser = {
@@ -171,13 +177,11 @@ impl Expr<'_> {
 
                 unary_op_parser
                     .then(expr.clone())
-                    .map_with_span(|(op, expr), span| {
-                        let e = Expr::Unary {
+                    .map(|(op, expr)| {
+                        Expr::Unary {
                             op,
-                            expr: Box::new((expr, span)),
-                        };
-
-                        (e, span)
+                            expr: Box::new(expr),
+                        }
                     })
             };
 
@@ -204,14 +208,12 @@ impl Expr<'_> {
                 expr.clone()
                     .then(binary_op_parser)
                     .then(expr.clone())
-                    .map_with_span(|((lhs, op), rhs), span| {
-                        let e = Expr::Binary {
+                    .map(|((lhs, op), rhs)| {
+                        Expr::Binary {
                             op,
-                            lhs: Box::new((lhs, span)),
-                            rhs: Box::new((rhs, span)),
-                        };
-
-                        (e, span)
+                            lhs: Box::new(lhs),
+                            rhs: Box::new(rhs),
+                        }
                     })
             };
 
@@ -222,11 +224,9 @@ impl Expr<'_> {
                 .or(ident_parser)
                 .or(unary_parser)
                 .or(binary_parser)
-                .map_with_span(|t, s| (t, s))
-                .padded()
-                .recover_with(skip_then_retry_until(any().ignored(), end()))
-                .repeated()
-                .collect()
         })
+        .map_with_span(|e, span| (e, span))
+        .recover_with(skip_then_retry_until(any().ignored(), end()))
+        .repeated()
     }
 }

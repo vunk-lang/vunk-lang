@@ -6,6 +6,6 @@ use crate::expr::Expr;
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
-pub struct Program {
-    pub expr: Vec<Expr>,
+pub struct Program<'src> {
+    pub expr: Vec<Expr<'src>>,
 }
