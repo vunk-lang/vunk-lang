@@ -225,8 +225,5 @@ impl Expr<'_> {
                 .or(unary_parser)
                 .or(binary_parser)
         })
-        .map_with_span(|e, span| (e, span))
-        .recover_with(skip_then_retry_until(any().ignored(), end()))
-        .repeated()
     }
 }
