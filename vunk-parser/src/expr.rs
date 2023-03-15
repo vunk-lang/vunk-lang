@@ -43,6 +43,7 @@ pub enum Expr<'src> {
 
     LetIn {
         exprs: Vec<Expr<'src>>,
+        sub: Box<Expr<'src>>,
     },
 
     IfElse {
@@ -120,21 +121,29 @@ impl Expr<'_> {
                     Token::Num(numstr) => numstr,
                 };
 
-                let i8_parser = numstr_parser.from_str::<i8>()
+                let i8_parser = numstr_parser
+                    .from_str::<i8>()
                     .map(|res| res.map(Integer::I8).unwrap());
-                let i16_parser = numstr_parser.from_str::<i16>()
+                let i16_parser = numstr_parser
+                    .from_str::<i16>()
                     .map(|res| res.map(Integer::I16).unwrap());
-                let i32_parser = numstr_parser.from_str::<i32>()
+                let i32_parser = numstr_parser
+                    .from_str::<i32>()
                     .map(|res| res.map(Integer::I32).unwrap());
-                let i64_parser = numstr_parser.from_str::<i64>()
+                let i64_parser = numstr_parser
+                    .from_str::<i64>()
                     .map(|res| res.map(Integer::I64).unwrap());
-                let u8_parser = numstr_parser.from_str::<u8>()
+                let u8_parser = numstr_parser
+                    .from_str::<u8>()
                     .map(|res| res.map(Integer::U8).unwrap());
-                let u16_parser = numstr_parser.from_str::<u16>()
+                let u16_parser = numstr_parser
+                    .from_str::<u16>()
                     .map(|res| res.map(Integer::U16).unwrap());
-                let u32_parser = numstr_parser.from_str::<u32>()
+                let u32_parser = numstr_parser
+                    .from_str::<u32>()
                     .map(|res| res.map(Integer::U32).unwrap());
-                let u64_parser = numstr_parser.from_str::<u64>()
+                let u64_parser = numstr_parser
+                    .from_str::<u64>()
                     .map(|res| res.map(Integer::U64).unwrap());
 
                 i8_parser
@@ -177,11 +186,9 @@ impl Expr<'_> {
 
                 unary_op_parser
                     .then(expr.clone())
-                    .map(|(op, expr)| {
-                        Expr::Unary {
-                            op,
-                            expr: Box::new(expr),
-                        }
+                    .map(|(op, expr)| Expr::Unary {
+                        op,
+                        expr: Box::new(expr),
                     })
             };
 
@@ -208,12 +215,10 @@ impl Expr<'_> {
                 expr.clone()
                     .then(binary_op_parser)
                     .then(expr.clone())
-                    .map(|((lhs, op), rhs)| {
-                        Expr::Binary {
-                            op,
-                            lhs: Box::new(lhs),
-                            rhs: Box::new(rhs),
-                        }
+                    .map(|((lhs, op), rhs)| Expr::Binary {
+                        op,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
                     })
             };
 
