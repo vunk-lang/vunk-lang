@@ -67,6 +67,7 @@ pub enum Expr<'src> {
     Decl {
         ident: &'src str,
         decl_type: DeclType<'src>,
+        generics: Option<Vec<&'src str>>,
         whereclause: Option<WhereClause<'src>>,
     },
 
@@ -79,11 +80,18 @@ pub enum Expr<'src> {
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub enum DeclType<'src> {
-    TypeName(&'src str),
+    TypeName(TypeName<'src>),
     Func {
         args: Vec<DeclArg<'src>>,
-        retty: &'src str,
+        retty: TypeName<'src>,
     },
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct TypeName<'src> {
+    name: &'src str,
+    generics: Option<Vec<&'src str>>,
 }
 
 #[derive(Debug)]
