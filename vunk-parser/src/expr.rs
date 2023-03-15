@@ -160,7 +160,7 @@ impl Expr<'_> {
                 let left_br = just(Token::Ctrl('[')).to(());
                 let right_br = just(Token::Ctrl(']')).to(());
 
-                expr.delimited_by(left_br, right_br)
+                expr.clone().delimited_by(left_br, right_br)
             };
 
             let ident_parser = select! {
