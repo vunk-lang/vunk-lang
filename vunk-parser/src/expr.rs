@@ -486,4 +486,26 @@ mod tests {
     fn test_ast_ident() {
         ast_has_no_errs("foobar");
     }
+
+    fn decl_has_no_errs(code: &str) {
+        let res = vunk_lexer::lexer().parse(code);
+        assert!(
+            !res.has_errors(),
+            "No errors expected, but found: {:?}",
+            res.errors().collect::<Vec<_>>()
+        );
+        let tokens = res.into_output().unwrap();
+        let tokens = tokens.as_slice().spanned((code.len()..code.len()).into());
+        let res = decl_parser().parse(tokens);
+        assert!(
+            !res.has_errors(),
+            "No errors expected, but found: {:?} --- CODE: '{code}'",
+            res.errors().collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn test_decl() {
+        decl_has_no_errs("foo: I8");
+    }
 }
