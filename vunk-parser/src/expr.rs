@@ -276,7 +276,6 @@ fn ident_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     }
 }
 
-
 // Parser for a declaration
 //
 // ## Short example
@@ -410,7 +409,8 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
                 // `T A B` (`A` and `B` are generics for `T`)
                 let trait_parser = type_parser();
 
-                trait_parser.separated_by(just(Token::Ctrl('+')))
+                trait_parser
+                    .separated_by(just(Token::Ctrl('+')))
                     .collect()
                     .map(Clauses)
             }
@@ -419,11 +419,9 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
                 generic_name_parser
                     .then_ignore(assign_parser.clone())
                     .then(clause_parser())
-                    .map(|(type_name, clauses)| {
-                        Generic {
-                            type_name,
-                            where_clause: clauses
-                        }
+                    .map(|(type_name, clauses)| Generic {
+                        type_name,
+                        where_clause: clauses,
                     })
                     .separated_by(just(Token::Ctrl(',')))
                     .collect()
@@ -442,17 +440,16 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
             // Both a function decl and a normal variable decl can be generic
             .then(generic_bounds_parser().or_not())
             .then_ignore(just(Token::Ctrl(';')))
-            .map(|(((decl_name, decl_generic_names), decl_type), whereclause)| {
-                Expr::Decl {
+            .map(
+                |(((decl_name, decl_generic_names), decl_type), whereclause)| Expr::Decl {
                     ident: decl_name,
                     generics: decl_generic_names,
                     decl_type,
                     whereclause,
-                }
-            })
+                },
+            )
     })
 }
-
 
 #[cfg(test)]
 mod tests {
