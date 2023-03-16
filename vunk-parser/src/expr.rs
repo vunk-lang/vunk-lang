@@ -227,3 +227,33 @@ impl Expr<'_> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use chumsky::{Parser, prelude::Input};
+    use super::*;
+
+    fn ast_has_no_errs(code: &str) {
+        let res = vunk_lexer::lexer().parse(code);
+        assert!(!res.has_errors());
+        let tokens = res.into_output().unwrap();
+        let tokens = tokens.as_slice().spanned((code.len()..code.len()).into());
+        let res = Expr::parser().parse(tokens);
+        assert!(!res.has_errors(), "No errors expected, but found: {:?}", res.errors().collect::<Vec<_>>());
+    }
+
+    #[test]
+    fn test_ast_bool() {
+        ast_has_no_errs("false");
+    }
+
+    #[test]
+    fn test_ast_int() {
+        ast_has_no_errs("123");
+    }
+
+    #[test]
+    fn test_ast_ident() {
+        ast_has_no_errs("foobar");
+    }
+}
