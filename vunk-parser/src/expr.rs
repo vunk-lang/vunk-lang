@@ -351,19 +351,6 @@ impl Expr<'_> {
                 })
             };
 
-            //let letin_parser = {
-            //    just(Token::Let)
-            //        .ignore_then({
-            //            expr.clone().separated_by(just(Token::Ctrl(';')))
-            //        })
-            //        .then_ignore(just(Token::In))
-            //        .then(expr.clone())
-            //        .map(|(lets, inner)| Expr::LetIn {
-            //            exprs: lets,
-            //            sub: Box::new(inner),
-            //        })
-            //};
-
             bool_parser
                 .or(int_parser)
                 .or(str_parser)
