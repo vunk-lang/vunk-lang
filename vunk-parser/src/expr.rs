@@ -432,7 +432,7 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
 
         ident_parser() // name of the declaration
             .then(ident_parser().repeated().collect().or_not()) // Generic arguments
-            .then_ignore(just(Token::Ctrl('?')))
+            .then_ignore(just(Token::Ctrl(':')))
             .then({
                 // The type of a declaration is either a function, where we need args
                 // and return type and so on,
