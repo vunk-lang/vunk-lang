@@ -5,7 +5,6 @@
 use chumsky::span::SimpleSpan;
 
 pub mod expr;
-pub mod generic;
 pub mod literal;
 pub mod op;
 pub mod program;
