@@ -26,7 +26,7 @@ impl Ageing on Aninmal =
       ageing = (Animal { name, age }) -> Animal { name, age: age + 1 }
     }
 
-grow_old: (A) -> A
+grow_old A: (A) -> A
     where A: Ageing;
 grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a);
 
