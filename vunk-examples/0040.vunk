@@ -69,7 +69,7 @@ impl Printable on Animal =
         in String.fmt "{} is {} old" [name age];
     }
 
-grow_old: (A) -> A
+grow_old A: (A) -> A
     where A: Ageing;
 grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a);
 

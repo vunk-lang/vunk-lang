@@ -111,7 +111,7 @@ impl Printable on Animal =
 #
 # When implementing generic functions, the signature is required.
 # When implementing non-generic functions, the signature will be inferred from the implementation
-grow_old: (A) -> A
+grow_old A: (A) -> A
     where A: Ageing;
 grow_old = (a: A) -> Ageing.ageing (Ageing.ageing a);
 

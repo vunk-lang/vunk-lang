@@ -42,13 +42,13 @@ func_b a = a + 1;
 
 # A simple function
 # with type declaration and generics
-func_c: (C) -> C
+func_c C: (C) -> C
     where C: Std.Op.Add;
 func_c a = a + 1;
 
 # A less simple function
 # with type declaration and generics
-func_d: (C, C) -> C
+func_d C: (C, C) -> C
     where C: Std.Op.Add;
 func_d a b: a + b;
 
