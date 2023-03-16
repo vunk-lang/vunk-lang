@@ -437,7 +437,7 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
                 // The type of a declaration is either a function, where we need args
                 // and return type and so on,
                 // or a concrete type (which can be generic)
-                func_parser().or(type_parser().map(DeclType::TypeName))
+                type_parser().map(DeclType::TypeName).or(func_parser())
             })
             // Both a function decl and a normal variable decl can be generic
             .then(generic_bounds_parser().or_not())
