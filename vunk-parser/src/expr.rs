@@ -120,7 +120,7 @@ type ParserInput<'tokens, 'src> =
     chumsky::input::SpannedInput<Token<'src>, SimpleSpan, &'tokens [(Token<'src>, SimpleSpan)]>;
 
 impl Expr<'_> {
-    fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
+    pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
         'tokens,
         ParserInput<'tokens, 'src>,
         Expr<'src>,
