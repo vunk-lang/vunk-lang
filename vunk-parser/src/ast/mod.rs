@@ -9,9 +9,6 @@ pub mod generic;
 pub mod ifelse;
 pub mod letin;
 pub mod literal;
-pub mod module;
 pub mod name;
 pub mod op;
 pub mod program;
-
-mod util;
