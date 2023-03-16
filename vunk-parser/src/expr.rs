@@ -230,9 +230,125 @@ impl Expr<'_> {
                     })
             };
 
+            // Parser for a declaration
+            //
+            // ## Short example
+            //
+            // ```
+            // bar: I8;
+            // ```
+            //
+            // Declares `bar` to be of type `I8`
+            //
+            // ## Full example
+            //
+            // ```
+            // foo A B = (A, B) -> A
+            //     where A: Add I8 + Debug
+            //           B: Into I8
+            //           ;
+            // ```
+            //
+            // Declares a variable `foo` generic over `A` and `B`
+            // to be a function with arguments of type `A` and `B`
+            // returning an instance of `A`
+            // with bounds:
+            //     * `A` must implement the generic trait `Add` parametrized with `I8`
+            //     * `A` must implement `Debug`
+            //     * `B` must implement the generic trait `Into` parametrized with `I8`
+            //
             let decl_parser = {
-                let decl_name_parser = ident_parser.clone();
-                let 
+                chumsky::recursive::recursive(|decl_parser| {
+                    let decl_name_parser = ident_parser.clone();
+                    let generic_names_parser = ident_parser.clone().repeated();
+                    let assign_parser = just(Token::Ctrl('='));
+                    let arrow = just(Token::Arrow);
+
+                    // Parser for a Type
+                    //
+                    //  The name of the type
+                    //    v
+                    // `Result T E`
+                    //         ^ ^
+                    //         Generics of the type
+                    let type_parser = {
+                        ident_parser.clone().then({
+                            ident_parser.clone().repeated().or_not()
+                        })
+                    };
+
+
+                    // Parser for a list of arguments
+                    //
+                    // Like: `(A, B)`
+                    // Or: `(A B C, D)` (`B` and `C` are generics for `A`
+                    //
+                    // In a declaration, we do not have argument names
+                    let args_parser = {
+                        let open_par = just(Token::Ctrl('('));
+                        let close_par = just(Token::Ctrl(')'));
+                        let comma = just(Token::Ctrl(','));
+
+                        type_parser.clone()
+                            .separated_by(comma)
+                            .delimited_by(open_par, close_par)
+                    };
+
+                    // Parser for a function signature
+                    //
+                    // E.G.: `(A) -> A`
+                    // E.G.: `(A B C) -> A B C`
+                    //  (`B` and `C` are generics for `A` here)
+                    let func_parser = args_parser.then_ignore(arrow).then(type_parser.clone());
+
+                    // Parser for `where` clause
+                    //
+                    // ```
+                    // where A: FooT + BarT,
+                    //       B: BarT
+                    // ```
+                    let whereclause = {
+                        let generic_name_parser = ident_parser.clone();
+
+                        // A trait name is written down like a type name:
+                        //
+                        // `T A B` (`A` and `B` are generics for `T`)
+                        let trait_parser = type_parser.clone();
+
+                        just(Token::Where).ignore_then({
+                            generic_name_parser
+                                .then_ignore(assign_parser.clone())
+                                .then({
+                                    // bounds
+                                    trait_parser.separated_by(just(Token::Ctrl('+')))
+                                })
+                                .separated_by(just(Token::Ctrl(',')))
+                                .repeated()
+                        })
+                    };
+
+                    decl_name_parser
+                        .then(generic_names_parser.repeated().or_not())
+                        .then_ignore(assign_parser)
+                        .then({
+                            // The type of a declaration is either a function, where we need args
+                            // and return type and so on,
+                            // or a concrete type (which can be generic)
+                            func_parser.or(type_parser)
+                        })
+                        // Both a function decl and a normal variable decl can be generic
+                        .then(whereclause.or_not())
+                        .then_ignore(just(Token::Ctrl(';')))
+                        .map(
+                            |()| {
+                                Expr::Decl {
+                                ident: decl_name,
+                                generics,
+                                decl_type: DeclType {},
+                                whereclause,
+                            },
+                            })
+                })
             };
 
             //let letin_parser = {
