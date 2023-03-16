@@ -8,6 +8,7 @@ use chumsky::primitive::end;
 use chumsky::primitive::just;
 use chumsky::recovery::skip_then_retry_until;
 use chumsky::select;
+use chumsky::IterParser;
 use chumsky::Parser;
 
 use chumsky::span::SimpleSpan;
@@ -169,9 +170,16 @@ impl Expr<'_> {
             // let float_parser = select! {
             // };
 
-            let str_parser = select! {
-                Token::Str(s) => Expr::Str(s),
-            };
+            fn str_parser<'tokens, 'src: 'tokens>() -> impl Parser<
+                'tokens,
+                ParserInput<'tokens, 'src>,
+                Expr<'src>,
+                chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
+            > + Clone {
+                select! {
+                    Token::Str(s) => Expr::Str(s),
+                }
+            }
 
             let list_parser = {
                 let left_br = just(Token::Ctrl('[')).to(());
@@ -180,9 +188,16 @@ impl Expr<'_> {
                 expr.clone().delimited_by(left_br, right_br)
             };
 
-            let ident_parser = select! {
-                Token::Ident(s) => Expr::Ident(s),
-            };
+            fn ident_parser<'tokens, 'src: 'tokens>() -> impl Parser<
+                'tokens,
+                ParserInput<'tokens, 'src>,
+                &'src str,
+                chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
+            > + Clone {
+                select! {
+                    Token::Ident(s) => s,
+                }
+            }
 
             let unary_parser = {
                 let unary_op_parser = {
@@ -259,8 +274,8 @@ impl Expr<'_> {
             //
             let decl_parser = {
                 chumsky::recursive::recursive(|decl_parser| {
-                    let decl_name_parser = ident_parser.clone();
-                    let generic_names_parser = ident_parser.clone().repeated();
+                    let decl_name_parser = ident_parser();
+                    let generic_names_parser = ident_parser().repeated();
                     let assign_parser = just(Token::Ctrl('='));
                     let arrow = just(Token::Arrow);
 
@@ -271,12 +286,19 @@ impl Expr<'_> {
                     // `Result T E`
                     //         ^ ^
                     //         Generics of the type
-                    let type_parser = {
-                        ident_parser.clone().then({
-                            ident_parser.clone().repeated().or_not()
-                        })
-                    };
-
+                    fn type_parser<'tokens, 'src: 'tokens>() -> impl Parser<
+                        'tokens,
+                        ParserInput<'tokens, 'src>,
+                        TypeName<'src>,
+                        chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
+                    > + Clone {
+                        ident_parser()
+                            .then(ident_parser().repeated().collect().or_not())
+                            .map(|(ident, generics)| TypeName {
+                                name: ident,
+                                generics,
+                            })
+                    }
 
                     // Parser for a list of arguments
                     //
@@ -289,7 +311,7 @@ impl Expr<'_> {
                         let close_par = just(Token::Ctrl(')'));
                         let comma = just(Token::Ctrl(','));
 
-                        type_parser.clone()
+                        type_parser()
                             .separated_by(comma)
                             .delimited_by(open_par, close_par)
                     };
@@ -299,7 +321,36 @@ impl Expr<'_> {
                     // E.G.: `(A) -> A`
                     // E.G.: `(A B C) -> A B C`
                     //  (`B` and `C` are generics for `A` here)
-                    let func_parser = args_parser.then_ignore(arrow).then(type_parser.clone());
+                    // let func_parser = args_parser.then_ignore(arrow).then(type_parser());
+                    fn func_parser<'tokens, 'src: 'tokens>() -> impl Parser<
+                        'tokens,
+                        ParserInput<'tokens, 'src>,
+                        DeclType<'src>,
+                        chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
+                    > + Clone {
+                        let arrow = just(Token::Arrow);
+                        fn args_parser<'tokens, 'src: 'tokens>() -> impl Parser<
+                            'tokens,
+                            ParserInput<'tokens, 'src>,
+                            Vec<DeclArg<'src>>,
+                            chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
+                        > + Clone {
+                            let open_par = just(Token::Ctrl('('));
+                            let close_par = just(Token::Ctrl(')'));
+                            let comma = just(Token::Ctrl(','));
+
+                            open_par
+                                .ignore_then(type_parser().separated_by(comma))
+                                .then_ignore(close_par)
+                                .map(|()| {
+                                })
+                        }
+
+                        args_parser
+                            .then_ignore(arrow)
+                            .then(type_parser())
+                            .map(|(args, retty)| DeclType::Func { args, retty })
+                    }
 
                     // Parser for `where` clause
                     //
@@ -308,12 +359,12 @@ impl Expr<'_> {
                     //       B: BarT
                     // ```
                     let whereclause = {
-                        let generic_name_parser = ident_parser.clone();
+                        let generic_name_parser = ident_parser();
 
                         // A trait name is written down like a type name:
                         //
                         // `T A B` (`A` and `B` are generics for `T`)
-                        let trait_parser = type_parser.clone();
+                        let trait_parser = type_parser();
 
                         just(Token::Where).ignore_then({
                             generic_name_parser
@@ -334,20 +385,19 @@ impl Expr<'_> {
                             // The type of a declaration is either a function, where we need args
                             // and return type and so on,
                             // or a concrete type (which can be generic)
-                            func_parser.or(type_parser)
+                            func_parser().or(type_parser())
                         })
                         // Both a function decl and a normal variable decl can be generic
                         .then(whereclause.or_not())
                         .then_ignore(just(Token::Ctrl(';')))
-                        .map(
-                            |()| {
-                                Expr::Decl {
-                                ident: decl_name,
-                                generics,
-                                decl_type: DeclType {},
-                                whereclause,
-                            },
-                            })
+                        .map(|()| {
+                            // Expr::Decl {
+                            //     ident: decl_name,
+                            //     generics,
+                            //     decl_type: DeclType {},
+                            //     whereclause,
+                            // }
+                        })
                 })
             };
 
