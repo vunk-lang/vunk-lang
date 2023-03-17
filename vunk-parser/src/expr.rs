@@ -70,8 +70,7 @@ pub enum Expr<'src> {
 
     Def {
         lhs: &'src str,
-        generics: Option<Vec<&'src str>>,
-        rhs: Box<Expr<'src>>,
+        rhs: DefRhs<'src>,
     },
 }
 
@@ -108,6 +107,45 @@ pub struct Clauses<'src>(pub Vec<TypeName<'src>>);
 pub struct DeclArg<'src> {
     pub name: Option<&'src str>,
     pub ty: DeclType<'src>,
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum DefRhs<'src> {
+    Bool(bool),
+    Integer(Integer),
+    Float(Float),
+    Str(&'src str),
+    List(Vec<Expr<'src>>),
+
+    Ident(&'src str),
+
+    Unary {
+        op: UnaryOp,
+        expr: Box<Expr<'src>>,
+    },
+
+    Binary {
+        lhs: Box<Expr<'src>>,
+        op: BinaryOp,
+        rhs: Box<Expr<'src>>,
+    },
+
+    LetIn {
+        exprs: Vec<Expr<'src>>,
+        sub: Box<Expr<'src>>,
+    },
+
+    IfElse {
+        condition: Box<Expr<'src>>,
+        tru: Box<Expr<'src>>,
+        fals: Box<Expr<'src>>,
+    },
+
+    Func {
+        args: Vec<DeclArg<'src>>,
+        block: Box<Expr<'src>>,
+    }
 }
 
 type ParserInput<'tokens, 'src> =
