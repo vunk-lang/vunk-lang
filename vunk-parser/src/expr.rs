@@ -525,4 +525,61 @@ mod tests {
     fn test_decl_fn_generic_2() {
         decl_has_no_errs("foo A B: (A, B) -> A;");
     }
+
+    #[test]
+    fn test_decl_fn_generic_with_bounds() {
+        let code = r#"
+            foo A: (A) -> A
+                where A: Debug;
+        "#;
+        decl_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_decl_fn_generic_2_with_bounds() {
+        let code = r#"
+            foo A B: (A, B) -> A
+                where A: Debug,
+                      B: Debug;
+        "#;
+        decl_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_decl_fn_generic_2_with_bounds_generic() {
+        let code = r#"
+            foo A: (A) -> A
+                where A: Add I8;
+        "#;
+        decl_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_decl_fn_generic_2_with_bounds_2() {
+        let code = r#"
+            foo A B: (A, B) -> A
+                where A: Add I8,
+                      B: Add I8;
+        "#;
+        decl_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_decl_fn_generic_2_with_multi_bounds() {
+        let code = r#"
+            foo A: (A) -> A
+                where A: Add I8 + Debug;
+        "#;
+        decl_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_decl_fn_generic_2_with_multi_bounds_2() {
+        let code = r#"
+            foo A B: (A, B) -> A
+                where A: Add I8 + Debug,
+                      B: Add I8 + Debug;
+        "#;
+        decl_has_no_errs(code);
+    }
 }
