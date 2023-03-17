@@ -159,9 +159,9 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, 
         .or(just("$").map(|_| Token::Dollar));
 
     let comment = just("#")
-        .then(any().and_is(just('\n').not()).repeated())
+        .ignore_then(any().and_is(just('\n').not()).repeated().slice())
         .padded()
-        .map(|(comment, ())| Token::Comment(comment));
+        .map(Token::Comment);
 
     num.or(str_)
         .or(ident)

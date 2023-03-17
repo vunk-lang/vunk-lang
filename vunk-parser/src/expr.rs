@@ -119,21 +119,38 @@ pub struct DefRhs<'src> {
 type ParserInput<'tokens, 'src> =
     chumsky::input::SpannedInput<Token<'src>, SimpleSpan, &'tokens [(Token<'src>, SimpleSpan)]>;
 
-impl Expr<'_> {
-    pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
+pub trait VunkParser<'tokens, 'src: 'tokens, O>:
+    Parser<
         'tokens,
         ParserInput<'tokens, 'src>,
-        Expr<'src>,
+        O,
         chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
-    > + Clone {
+    > + Clone
+{
+}
+
+impl<'tokens, 'src, O, P> VunkParser<'tokens, 'src, O> for P
+where
+    'src: 'tokens,
+    P: Parser<
+            'tokens,
+            ParserInput<'tokens, 'src>,
+            O,
+            chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
+        > + Clone,
+{
+}
+
+impl Expr<'_> {
+    pub fn parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
         chumsky::recursive::recursive(|expr| {
             // TODO: Support floats
             // let float_parser = select! {
             // };
 
             let list_parser = {
-                let left_br = just(Token::Op("[")).to(());
-                let right_br = just(Token::Op("]")).to(());
+                let left_br = just(Token::Op("["));
+                let right_br = just(Token::Op("]"));
 
                 expr.clone().delimited_by(left_br, right_br)
             };
@@ -196,24 +213,14 @@ impl Expr<'_> {
     }
 }
 
-fn bool_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    Expr<'src>,
-    chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
-> + Clone {
+fn bool_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
     select! {
         Token::Bool(true) => Expr::Bool(true),
         Token::Bool(false) => Expr::Bool(false),
     }
 }
 
-fn int_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    Expr<'src>,
-    chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
-> + Clone {
+fn int_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
     let numstr_parser = select! {
         Token::Num(numstr) => numstr,
     };
@@ -254,23 +261,13 @@ fn int_parser<'tokens, 'src: 'tokens>() -> impl Parser<
         .map(Expr::Integer)
 }
 
-fn str_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    Expr<'src>,
-    chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
-> + Clone {
+fn str_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
     select! {
         Token::Str(s) => Expr::Str(s),
     }
 }
 
-fn ident_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    &'src str,
-    chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
-> + Clone {
+fn ident_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, &'src str> {
     select! {
         Token::Ident(s) => s,
     }
@@ -303,12 +300,7 @@ fn ident_parser<'tokens, 'src: 'tokens>() -> impl Parser<
 //     * `A` must implement `Debug`
 //     * `B` must implement the generic trait `Into` parametrized with `I8`
 //
-fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    Expr<'src>,
-    chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
-> + Clone {
+fn decl_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
     chumsky::recursive::recursive(|_decl_parser| {
         // Parser for a Type
         //
@@ -317,12 +309,7 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
         // `Result T E`
         //         ^ ^
         //         Generics of the type
-        fn type_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-            'tokens,
-            ParserInput<'tokens, 'src>,
-            TypeName<'src>,
-            chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
-        > + Clone {
+        fn type_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, TypeName<'src>> {
             ident_parser()
                 .then(ident_parser().repeated().collect().or_not())
                 .map(|(ident, generics)| TypeName {
@@ -338,12 +325,7 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
         //  (`B` and `C` are generics for `A` here)
         //
         //  Returns the Decl::Func variant
-        fn func_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-            'tokens,
-            ParserInput<'tokens, 'src>,
-            DeclType<'src>,
-            chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
-        > + Clone {
+        fn func_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, DeclType<'src>> {
             let arrow = just(Token::Op("->"));
 
             // Parser for a list of arguments
@@ -352,12 +334,8 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
             // Or: `(A B C, D)` (`B` and `C` are generics for `A`
             //
             // In a declaration, we do not have argument names
-            fn args_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-                'tokens,
-                ParserInput<'tokens, 'src>,
-                Vec<DeclArg<'src>>,
-                chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
-            > + Clone {
+            fn args_parser<'tokens, 'src: 'tokens>(
+            ) -> impl VunkParser<'tokens, 'src, Vec<DeclArg<'src>>> {
                 let open_par = just(Token::Op("("));
                 let close_par = just(Token::Op(")"));
                 let comma = just(Token::Op(","));
@@ -387,23 +365,15 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
         // where A: FooT + BarT,
         //       B: BarT
         // ```
-        fn generic_bounds_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-            'tokens,
-            ParserInput<'tokens, 'src>,
-            Vec<Generic<'src>>,
-            chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
-        > + Clone {
+        fn generic_bounds_parser<'tokens, 'src: 'tokens>(
+        ) -> impl VunkParser<'tokens, 'src, Vec<Generic<'src>>> {
             let generic_name_parser = ident_parser();
 
             let assign_parser = just(Token::Op(":"));
 
             /// Parser for the `Into I8 + Debug` in `where A: Into I8 + Debug;`
-            fn clause_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-                'tokens,
-                ParserInput<'tokens, 'src>,
-                Clauses<'src>,
-                chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
-            > + Clone {
+            fn clause_parser<'tokens, 'src: 'tokens>(
+            ) -> impl VunkParser<'tokens, 'src, Clauses<'src>> {
                 // A trait name is written down like a type name:
                 //
                 // `T A B` (`A` and `B` are generics for `T`)
