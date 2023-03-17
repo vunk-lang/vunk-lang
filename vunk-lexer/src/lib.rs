@@ -18,6 +18,7 @@ type Spanned<T> = (T, Span);
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Token<'src> {
     Ident(&'src str),
+    Dollar,
 
     Op(&'src str),
 
@@ -56,6 +57,7 @@ impl std::fmt::Display for Token<'_> {
             Bool(x) => write!(f, "{}", x),
             Else => write!(f, "else"),
             Ident(s) => write!(f, "{}", s),
+            Dollar => write!(f, "$"),
             If => write!(f, "if"),
             Then => write!(f, "then"),
             In => write!(f, "in"),
@@ -132,26 +134,28 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, 
         ))
     };
 
-    let ident = ident().map(|ident: &str| match ident {
-        "if" => Token::If,
-        "then" => Token::Then,
-        "else" => Token::Else,
-        "let" => Token::Let,
-        "in" => Token::In,
-        "where" => Token::Where,
-        "match" => Token::Match,
-        "when" => Token::When,
-        "type" => Token::Type,
-        "impl" => Token::Impl,
-        "enum" => Token::Enum,
-        "use" => Token::Use,
-        "pub" => Token::Pub,
-        "mod" => Token::Mod,
-        "true" => Token::Bool(true),
-        "false" => Token::Bool(false),
+    let ident = ident()
+        .map(|ident: &str| match ident {
+            "if" => Token::If,
+            "then" => Token::Then,
+            "else" => Token::Else,
+            "let" => Token::Let,
+            "in" => Token::In,
+            "where" => Token::Where,
+            "match" => Token::Match,
+            "when" => Token::When,
+            "type" => Token::Type,
+            "impl" => Token::Impl,
+            "enum" => Token::Enum,
+            "use" => Token::Use,
+            "pub" => Token::Pub,
+            "mod" => Token::Mod,
+            "true" => Token::Bool(true),
+            "false" => Token::Bool(false),
 
-        _ => Token::Ident(ident),
-    });
+            _ => Token::Ident(ident),
+        })
+        .or(just("$").map(|_| Token::Dollar));
 
     let comment = just("#")
         .then(any().and_is(just('\n').not()).repeated())
