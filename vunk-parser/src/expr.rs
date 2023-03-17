@@ -506,5 +506,6 @@ mod tests {
         decl_has_no_errs("foo: I8;");
         decl_has_no_errs("foo A: A;");
         decl_has_no_errs("foo A: (A) -> A;");
+        decl_has_no_errs("foo A B: (A, B) -> A;");
     }
 }
