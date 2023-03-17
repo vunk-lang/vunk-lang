@@ -504,5 +504,6 @@ mod tests {
     #[test]
     fn test_decl() {
         decl_has_no_errs("foo: I8;");
+        decl_has_no_errs("foo A: A;");
     }
 }
