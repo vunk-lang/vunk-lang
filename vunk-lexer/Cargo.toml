@@ -12,3 +12,6 @@ build = "build.rs"
 tracing.workspace = true
 
 chumsky = "1.0.0-alpha.3"
+
+[dev-dependencies]
+paste = "1"
