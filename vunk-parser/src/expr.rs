@@ -309,7 +309,7 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     Expr<'src>,
     chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
 > + Clone {
-    chumsky::recursive::recursive(|decl_parser| {
+    chumsky::recursive::recursive(|_decl_parser| {
         // Parser for a Type
         //
         //  The name of the type
