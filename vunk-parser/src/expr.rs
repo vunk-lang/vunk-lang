@@ -185,9 +185,19 @@ impl Expr<'_> {
                     .or(just(Token::Op("^")).to(BinaryOp::BitXor))
                     .or(just(Token::Op("++")).to(BinaryOp::Join));
 
-                expr.clone()
-                    .then(binary_op_parser)
-                    .then(expr.clone())
+                let lhs = ident_parser().map(Expr::Ident)
+                    .or(bool_parser())
+                    .or(int_parser())
+                    .or(list_parser.clone())
+                    .or({
+                        expr.clone()
+                            .delimited_by(just(Token::Op("(")), just(Token::Op(")")))
+                    });
+
+                let rhs = lhs.clone();
+
+                lhs.then(binary_op_parser)
+                    .then(rhs)
                     .map(|((lhs, op), rhs)| Expr::Binary {
                         op,
                         lhs: Box::new(lhs),
@@ -195,14 +205,14 @@ impl Expr<'_> {
                     })
             };
 
-            bool_parser()
-                .or(int_parser())
-                .or(str_parser())
-                .or(list_parser)
-                .or(ident_parser().map(Expr::Ident))
-                .or(unary_parser)
+            decl_parser()
                 .or(binary_parser)
-                .or(decl_parser())
+                .or(unary_parser)
+                .or(list_parser)
+                .or(str_parser())
+                .or(int_parser())
+                .or(bool_parser())
+                .or(ident_parser().map(Expr::Ident))
         })
     }
 }
@@ -545,5 +555,13 @@ mod tests {
                       B: Add I8 + Debug;
         "#;
         decl_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_binary_expr() {
+        let code = r#"
+            1 + 2
+        "#;
+        ast_has_no_errs(code);
     }
 }
