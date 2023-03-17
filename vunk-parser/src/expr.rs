@@ -410,7 +410,7 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
                 let trait_parser = type_parser();
 
                 trait_parser
-                    .separated_by(just(Token::Ctrl('+')))
+                    .separated_by(just(Token::Op("+")))
                     .collect()
                     .map(Clauses)
             }
