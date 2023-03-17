@@ -395,7 +395,7 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl Parser<
         > + Clone {
             let generic_name_parser = ident_parser();
 
-            let assign_parser = just(Token::Op("="));
+            let assign_parser = just(Token::Op(":"));
 
             /// Parser for the `Into I8 + Debug` in `where A: Into I8 + Debug;`
             fn clause_parser<'tokens, 'src: 'tokens>() -> impl Parser<
