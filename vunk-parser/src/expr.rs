@@ -185,9 +185,19 @@ impl Expr<'_> {
                     .or(just(Token::Op("^")).to(BinaryOp::BitXor))
                     .or(just(Token::Op("++")).to(BinaryOp::Join));
 
-                expr.clone()
-                    .then(binary_op_parser)
-                    .then(expr.clone())
+                let lhs = ident_parser().map(Expr::Ident)
+                    .or(bool_parser())
+                    .or(int_parser())
+                    .or(list_parser.clone())
+                    .or({
+                        expr.clone()
+                            .delimited_by(just(Token::Op("(")), just(Token::Op(")")))
+                    });
+
+                let rhs = lhs.clone();
+
+                lhs.then(binary_op_parser)
+                    .then(rhs)
                     .map(|((lhs, op), rhs)| Expr::Binary {
                         op,
                         lhs: Box::new(lhs),
