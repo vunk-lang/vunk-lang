@@ -10,8 +10,8 @@ use chumsky::primitive::one_of;
 use chumsky::recovery::skip_then_retry_until;
 use chumsky::text;
 use chumsky::text::ident;
-use chumsky::Parser;
 use chumsky::IterParser;
+use chumsky::Parser;
 
 type Span = chumsky::span::SimpleSpan<usize>;
 type Spanned<T> = (T, Span);
@@ -81,7 +81,9 @@ impl std::fmt::Display for Token<'_> {
     }
 }
 
-pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>> {
+pub type LexerError<'src> = chumsky::extra::Err<chumsky::error::Rich<'src, char, Span>>;
+
+pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, LexerError<'src>> {
     let num = text::int(10)
         .then(just('.').then(text::digits(10)).or_not())
         .slice()
@@ -139,28 +141,26 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>> 
             .or(op_join)
     };
 
-    let ident = ident().map(|ident: &str| {
-        match ident {
-            "->" => Token::Arrow,
-            "if" => Token::If,
-            "then" => Token::Then,
-            "else" => Token::Else,
-            "let" => Token::Let,
-            "in" => Token::In,
-            "where" => Token::Where,
-            "match" => Token::Match,
-            "when" => Token::When,
-            "type" => Token::Type,
-            "impl" => Token::Impl,
-            "enum" => Token::Enum,
-            "use" => Token::Use,
-            "pub" => Token::Pub,
-            "mod" => Token::Mod,
-            "true" => Token::Bool(true),
-            "false" => Token::Bool(false),
+    let ident = ident().map(|ident: &str| match ident {
+        "->" => Token::Arrow,
+        "if" => Token::If,
+        "then" => Token::Then,
+        "else" => Token::Else,
+        "let" => Token::Let,
+        "in" => Token::In,
+        "where" => Token::Where,
+        "match" => Token::Match,
+        "when" => Token::When,
+        "type" => Token::Type,
+        "impl" => Token::Impl,
+        "enum" => Token::Enum,
+        "use" => Token::Use,
+        "pub" => Token::Pub,
+        "mod" => Token::Mod,
+        "true" => Token::Bool(true),
+        "false" => Token::Bool(false),
 
-            _ => Token::Ident(ident),
-        }
+        _ => Token::Ident(ident),
     });
 
     let comment = just("#")
