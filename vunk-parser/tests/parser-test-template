@@ -13,7 +13,7 @@ fn {name}() {{
     let res = Expr::parser().parse(tokens);
     assert!(
         !res.has_errors(),
-        "No errors expected, but found: {:?} --- CODE: '{code}'",
+        "No errors expected, but found: {{:?}} --- CODE: '{{code}}'",
         res.errors().collect::<Vec<_>>()
     );
 }}

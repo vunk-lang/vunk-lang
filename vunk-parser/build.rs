@@ -49,6 +49,8 @@ fn write_header(test_file: &mut File) {
         test_file,
         r#"
 use chumsky::Parser;
+use chumsky::input::Input;
+use vunk_parser::expr::Expr;
 "#
     )
     .unwrap();
