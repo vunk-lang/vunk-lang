@@ -620,4 +620,75 @@ mod tests {
         "#;
         ast_has_no_errs(code);
     }
+
+    #[test]
+    fn test_def_var_generic() {
+        let code = r#"
+            foo A = A;
+        "#;
+        ast_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_def_fn() {
+        let code = r#"
+            foo = () -> 1;
+        "#;
+        ast_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_def_fn_1() {
+        let code = r#"
+            foo = (a: I8) -> a;
+        "#;
+        ast_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_def_fn_2() {
+        let code = r#"
+            foo = (a: I8) -> a + 1;
+        "#;
+        ast_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_def_fn_3() {
+        let code = r#"
+            foo = (a: I8) -> if a > 0
+                then a - 1
+                else a;
+        "#;
+        ast_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_def_fn_4() {
+        let code = r#"
+            foo = (a: I8) -> let
+                    iszero = a > 0;
+                in
+                if iszero
+                then 0
+                else a - 1;
+        "#;
+        ast_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_def_fn_generic_1() {
+        let code = r#"
+            foo A = (a: A) -> a + 1;
+        "#;
+        ast_has_no_errs(code);
+    }
+
+    #[test]
+    fn test_def_fn_generic_2() {
+        let code = r#"
+            foo A B = (a: A, b: B) -> a + b;
+        "#;
+        ast_has_no_errs(code);
+    }
 }
