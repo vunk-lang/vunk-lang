@@ -502,10 +502,22 @@ mod tests {
     }
 
     #[test]
-    fn test_decl() {
+    fn test_decl_var() {
         decl_has_no_errs("foo: I8;");
+    }
+
+    #[test]
+    fn test_decl_var_generic() {
         decl_has_no_errs("foo A: A;");
+    }
+
+    #[test]
+    fn test_decl_fn_generic() {
         decl_has_no_errs("foo A: (A) -> A;");
+    }
+
+    #[test]
+    fn test_decl_fn_generic_2() {
         decl_has_no_errs("foo A B: (A, B) -> A;");
     }
 }
