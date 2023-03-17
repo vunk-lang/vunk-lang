@@ -70,7 +70,8 @@ pub enum Expr<'src> {
 
     Def {
         lhs: &'src str,
-        rhs: DefRhs<'src>,
+        generics: Option<Vec<&'src str>>,
+        rhs: Box<Expr<'src>>,
     },
 }
 
@@ -107,13 +108,6 @@ pub struct Clauses<'src>(pub Vec<TypeName<'src>>);
 pub struct DeclArg<'src> {
     pub name: Option<&'src str>,
     pub ty: DeclType<'src>,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(PartialEq))]
-pub struct DefRhs<'src> {
-    pub args: Vec<(&'src str, DeclType<'src>)>,
-    pub expr: Box<Expr<'src>>,
 }
 
 type ParserInput<'tokens, 'src> =
