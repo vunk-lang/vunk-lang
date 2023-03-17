@@ -6,7 +6,6 @@ use chumsky::primitive::any;
 use chumsky::primitive::end;
 use chumsky::primitive::just;
 use chumsky::primitive::none_of;
-use chumsky::primitive::one_of;
 use chumsky::recovery::skip_then_retry_until;
 use chumsky::text;
 use chumsky::text::ident;
@@ -20,8 +19,6 @@ type Spanned<T> = (T, Span);
 pub enum Token<'src> {
     Ident(&'src str),
 
-    Arrow,
-    Ctrl(char),
     Op(&'src str),
 
     Num(&'src str),
@@ -56,9 +53,7 @@ impl std::fmt::Display for Token<'_> {
 
         match self {
             Comment(text) => write!(f, "# {}", text),
-            Arrow => write!(f, "->"),
             Bool(x) => write!(f, "{}", x),
-            Ctrl(c) => write!(f, "{}", c),
             Else => write!(f, "else"),
             Ident(s) => write!(f, "{}", s),
             If => write!(f, "if"),
@@ -97,54 +92,43 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, 
         .delimited_by(just('"'), just('"'))
         .map(Token::Str);
 
-    // A parser for control characters (delimiters, semicolons, etc.)
-    let ctrl = one_of("(),=:.;[]{}|").map(Token::Ctrl);
-
     let operator = {
-        let op_add = just("+").map(|c| Token::Op(c));
-        let op_sub = just("-")
-            .then_ignore(none_of(">").rewind())
-            .map(|c| Token::Op(c));
-        let op_mul = just("*").map(|c| Token::Op(c));
-        let op_div = just("/").map(|c| Token::Op(c));
-        let op_rem = just("%").map(|c| Token::Op(c));
-        let op_eq = just("==").map(|c| Token::Op(c));
-        let op_neq = just("!=").map(|c| Token::Op(c));
-        let op_less = just("<").map(|c| Token::Op(c));
-        let op_less_eq = just("<=").map(|c| Token::Op(c));
-        let op_more = just(">").map(|c| Token::Op(c));
-        let op_more_eq = just(">=").map(|c| Token::Op(c));
-
-        let op_bit_and = just("&").map(|c| Token::Op(c));
-        let op_logical_and = just("&&").map(|c| Token::Op(c));
-        let op_bit_or = just("|").map(|c| Token::Op(c));
-        let op_logical_or = just("||").map(|c| Token::Op(c));
-
-        let op_bit_xor = just("^").map(|c| Token::Op(c));
-
-        let op_join = just("++").map(|c| Token::Op(c));
-
-        op_add
-            .or(op_sub)
-            .or(op_mul)
-            .or(op_div)
-            .or(op_rem)
-            .or(op_eq)
-            .or(op_neq)
-            .or(op_less)
-            .or(op_less_eq)
-            .or(op_more)
-            .or(op_more_eq)
-            .or(op_bit_and)
-            .or(op_logical_and)
-            .or(op_bit_or)
-            .or(op_logical_or)
-            .or(op_bit_xor)
-            .or(op_join)
+        // Put the "long" tokens first, so they get parsed first
+        //
+        just("->")
+            .map(Token::Op)
+            .or(just("==").map(Token::Op))
+            .or(just("!=").map(Token::Op))
+            .or(just("<=").map(Token::Op))
+            .or(just(">=").map(Token::Op))
+            .or(just("&&").map(Token::Op))
+            .or(just("||").map(Token::Op))
+            .or(just("++").map(Token::Op))
+            .or(just("<").map(Token::Op))
+            .or(just(">").map(Token::Op))
+            .or(just("&").map(Token::Op))
+            .or(just("|").map(Token::Op))
+            .or(just("(").map(Token::Op))
+            .or(just(")").map(Token::Op))
+            .or(just(",").map(Token::Op))
+            .or(just("=").map(Token::Op))
+            .or(just(":").map(Token::Op))
+            .or(just(".").map(Token::Op))
+            .or(just(";").map(Token::Op))
+            .or(just("[").map(Token::Op))
+            .or(just("]").map(Token::Op))
+            .or(just("{").map(Token::Op))
+            .or(just("}").map(Token::Op))
+            .or(just("|").map(Token::Op))
+            .or(just("+").map(Token::Op))
+            .or(just("-").then_ignore(just(">").not()).map(Token::Op))
+            .or(just("*").map(Token::Op))
+            .or(just("/").map(Token::Op))
+            .or(just("%").map(Token::Op))
+            .or(just("^").map(Token::Op))
     };
 
     let ident = ident().map(|ident: &str| match ident {
-        "->" => Token::Arrow,
         "if" => Token::If,
         "then" => Token::Then,
         "else" => Token::Else,
@@ -173,7 +157,6 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, 
     num.or(str_)
         .or(ident)
         .or(operator)
-        .or(ctrl)
         .or(comment)
         .map_with_span(|t, s| (t, s))
         .padded()
@@ -238,7 +221,7 @@ mod tests {
         let tokens = lex(code);
         let arrow = tokens.first().unwrap();
         assert!(
-            matches!(arrow.0, Token::Arrow),
+            matches!(arrow.0, Token::Op("->")),
             "Expected Token::Arrow, got: {:?}",
             arrow
         );
