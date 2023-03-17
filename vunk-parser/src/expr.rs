@@ -132,8 +132,8 @@ impl Expr<'_> {
             // };
 
             let list_parser = {
-                let left_br = just(Token::Op("[")).to(());
-                let right_br = just(Token::Op("]")).to(());
+                let left_br = just(Token::Op("["));
+                let right_br = just(Token::Op("]"));
 
                 expr.clone().delimited_by(left_br, right_br)
             };
