@@ -98,7 +98,7 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, 
         .map(Token::Str);
 
     // A parser for control characters (delimiters, semicolons, etc.)
-    let ctrl = one_of("(),=:+.;[]{}|").map(Token::Ctrl);
+    let ctrl = one_of("(),=:.;[]{}|").map(Token::Ctrl);
 
     let operator = {
         let op_add = just("+").map(|c| Token::Op(c));
