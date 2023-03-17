@@ -512,6 +512,11 @@ mod tests {
     }
 
     #[test]
+    fn test_decl_fn() {
+        decl_has_no_errs("foo: (I8) -> I8;");
+    }
+
+    #[test]
     fn test_decl_fn_generic() {
         decl_has_no_errs("foo A: (A) -> A;");
     }
