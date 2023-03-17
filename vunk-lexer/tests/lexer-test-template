@@ -9,7 +9,7 @@ fn {name}() {{
     let tokens = lexer_res.output().unwrap();
     assert!(
         !has_errs,
-        "Tokens: {{:?}}, Errors: {{}}",
+        "Tokens: {{:#?}}, Errors: {{}}",
         tokens,
         errs.map(|e| {{
                 let mut linenr = 0;
