@@ -102,7 +102,9 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, 
 
     let operator = {
         let op_add = just("+").map(|c| Token::Op(c));
-        let op_sub = just("-").map(|c| Token::Op(c));
+        let op_sub = just("-")
+            .then_ignore(none_of(">").rewind())
+            .map(|c| Token::Op(c));
         let op_mul = just("*").map(|c| Token::Op(c));
         let op_div = just("/").map(|c| Token::Op(c));
         let op_rem = just("%").map(|c| Token::Op(c));
