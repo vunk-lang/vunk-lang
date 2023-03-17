@@ -188,7 +188,7 @@ impl Expr<'_> {
                 .or(int_parser())
                 .or(str_parser())
                 .or(list_parser)
-                .or(ident_parser().map(|i| Expr::Ident(i)))
+                .or(ident_parser().map(Expr::Ident))
                 .or(unary_parser)
                 .or(binary_parser)
                 .or(decl_parser())
