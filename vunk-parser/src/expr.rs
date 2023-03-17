@@ -557,4 +557,12 @@ mod tests {
         "#;
         decl_has_no_errs(code);
     }
+
+    #[test]
+    fn test_binary_expr() {
+        let code = r#"
+            1 + 2
+        "#;
+        ast_has_no_errs(code);
+    }
 }
