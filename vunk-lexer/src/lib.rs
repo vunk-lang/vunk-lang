@@ -169,9 +169,9 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, 
         .map(|(comment, ())| Token::Comment(comment));
 
     num.or(str_)
-        .or(ctrl)
-        .or(operator)
         .or(ident)
+        .or(operator)
+        .or(ctrl)
         .or(comment)
         .map_with_span(|t, s| (t, s))
         .padded()
