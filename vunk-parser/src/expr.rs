@@ -207,6 +207,7 @@ impl Expr<'_> {
             };
 
             decl_parser()
+                .or(def_parser())
                 .or(binary_parser)
                 .or(unary_parser)
                 .or(list_parser)
@@ -423,6 +424,52 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<
                     whereclause,
                 },
             )
+    })
+}
+
+// Parser for a definition
+//
+// ## Short example
+//
+// ```
+// foo = 1;
+// ```
+//
+// Declares `foo` to be 1.
+//
+// ## Full example
+//
+// ```
+// add A A = (a: A, b: A) -> a + b;
+// ```
+//
+// Declares a variable `add` generic over `A`
+// to be a function with arguments `a` and `b` of type `A`
+// and the implementation `a + b`.
+//
+// There are no generic bounds here, because if generics are in use, we expect a declaration to be
+// there.
+//
+fn def_parser<'tokens, 'src: 'tokens>() -> impl Parser<
+    'tokens,
+    ParserInput<'tokens, 'src>,
+    Expr<'src>,
+    chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
+> + Clone {
+    chumsky::recursive::recursive(|_def_parser| {
+        ident_parser() // name of the declaration
+            .then(ident_parser().repeated().collect().or_not()) // Generic arguments
+            .then_ignore(just(Token::Op("=")))
+            .then({
+                // after the assignment '=' we expect an expression
+                Expr::parser()
+            })
+            .then_ignore(just(Token::Op(";")))
+            .map(|((name, generics), expr)| Expr::Def {
+                lhs: name,
+                generics,
+                rhs: Box::new(expr),
+            })
     })
 }
 
