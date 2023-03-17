@@ -3,13 +3,15 @@ fn {name}() {{
     let code = include_str!("{path}");
 
     let lexer = vunk_lexer::lexer();
-    let (tokens, errs) = lexer.parse_recovery(code);
+    let lexer_res = lexer.parse(code);
+    let has_errs = lexer_res.has_errors();
+    let errs = lexer_res.errors();
+    let tokens = lexer_res.output().unwrap();
     assert!(
-        errs.is_empty(),
-        "Tokens: {{:?}}, Errors: {{}}",
+        !has_errs,
+        "Tokens: {{:#?}}, Errors: {{}}",
         tokens,
-        errs.into_iter()
-            .map(|e| {{
+        errs.map(|e| {{
                 let mut linenr = 0;
                 let mut chr = e.span().start;
 

@@ -2,8 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-pub mod ast;
+use chumsky::span::SimpleSpan;
 
-use vunk_lexer::Span;
+pub mod expr;
+pub mod literal;
+pub mod op;
+pub mod program;
 
-pub type Spanned<T> = (T, Span);
+pub type Spanned<T> = (T, SimpleSpan);

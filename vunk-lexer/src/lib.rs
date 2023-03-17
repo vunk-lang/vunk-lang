@@ -2,29 +2,28 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-use chumsky::error::Simple;
-use chumsky::primitive::filter;
+use chumsky::primitive::any;
+use chumsky::primitive::end;
 use chumsky::primitive::just;
-use chumsky::primitive::one_of;
-use chumsky::primitive::take_until;
+use chumsky::primitive::none_of;
 use chumsky::recovery::skip_then_retry_until;
 use chumsky::text;
-use chumsky::text::TextParser;
+use chumsky::text::ident;
+use chumsky::IterParser;
 use chumsky::Parser;
 
-pub type Span = std::ops::Range<usize>;
-pub type Spanned<T> = (T, Span);
+type Span = chumsky::span::SimpleSpan<usize>;
+type Spanned<T> = (T, Span);
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Token {
-    Ident(String),
+pub enum Token<'src> {
+    Ident(&'src str),
+    Dollar,
 
-    Arrow,
-    Ctrl(char),
-    Op(String),
+    Op(&'src str),
 
-    Num(String),
-    Str(String),
+    Num(&'src str),
+    Str(&'src str),
 
     If,
     Then,
@@ -46,27 +45,26 @@ pub enum Token {
     Pub,
     Mod,
 
-    Comment(String),
+    Comment(&'src str),
 }
 
-impl std::fmt::Display for Token {
+impl std::fmt::Display for Token<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use Token::*;
 
         match self {
-            Comment(text) => write!(f, "# {}", text),
-            Arrow => write!(f, "->"),
-            Bool(x) => write!(f, "{}", x),
-            Ctrl(c) => write!(f, "{}", c),
+            Comment(text) => write!(f, "# {text}"),
+            Bool(x) => write!(f, "{x}"),
             Else => write!(f, "else"),
-            Ident(s) => write!(f, "{}", s),
+            Ident(s) => write!(f, "{s}"),
+            Dollar => write!(f, "$"),
             If => write!(f, "if"),
             Then => write!(f, "then"),
             In => write!(f, "in"),
             Let => write!(f, "let"),
-            Num(n) => write!(f, "{}", n),
-            Str(s) => write!(f, "{}", s),
-            Op(s) => write!(f, "{}", s),
+            Num(n) => write!(f, "{n}"),
+            Str(s) => write!(f, "{s}"),
+            Op(s) => write!(f, "{s}"),
             Use => write!(f, "use"),
             Pub => write!(f, "pub"),
             Where => write!(f, "where"),
@@ -80,129 +78,160 @@ impl std::fmt::Display for Token {
     }
 }
 
-pub fn lexer() -> impl Parser<char, Vec<Spanned<Token>>, Error = Simple<char>> {
+pub type LexerError<'src> = chumsky::extra::Err<chumsky::error::Rich<'src, char, Span>>;
+
+pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, LexerError<'src>> {
     let num = text::int(10)
-        .chain::<char, _, _>(just('.').chain(text::digits(10)).or_not().flatten())
-        .collect::<String>()
+        .then(just('.').then(text::digits(10)).or_not())
+        .slice()
         .map(Token::Num);
 
     // A parser for strings
-    let str_ = just('"')
-        .ignore_then(filter(|c| *c != '"').repeated())
-        .then_ignore(just('"'))
-        .collect::<String>()
+    let str_ = none_of("\\\"")
+        .ignored()
+        .repeated()
+        .slice()
+        .delimited_by(just('"'), just('"'))
         .map(Token::Str);
 
-    // A parser for control characters (delimiters, semicolons, etc.)
-    let ctrl = one_of("(),=:+.;[]{}|").map(Token::Ctrl);
-
     let operator = {
-        let op_add = just('+').map(|c| Token::Op(c.to_string()));
-        let op_sub = just('-').map(|c| Token::Op(c.to_string()));
-        let op_mul = just('*').map(|c| Token::Op(c.to_string()));
-        let op_div = just('/').map(|c| Token::Op(c.to_string()));
-        let op_rem = just('%').map(|c| Token::Op(c.to_string()));
-        let op_eq = just("==").map(|c| Token::Op(c.to_string()));
-        let op_neq = just("!=").map(|c| Token::Op(c.to_string()));
-        let op_less = just('<').map(|c| Token::Op(c.to_string()));
-        let op_less_eq = just("<=").map(|c| Token::Op(c.to_string()));
-        let op_more = just('>').map(|c| Token::Op(c.to_string()));
-        let op_more_eq = just(">=").map(|c| Token::Op(c.to_string()));
-
-        let op_bit_and = just('&').map(|c| Token::Op(c.to_string()));
-        let op_logical_and = just("&&").map(|c| Token::Op(c.to_string()));
-        let op_bit_or = just('|').map(|c| Token::Op(c.to_string()));
-        let op_logical_or = just("||").map(|c| Token::Op(c.to_string()));
-
-        let op_bit_xor = just('^').map(|c| Token::Op(c.to_string()));
-
-        let op_join = just("++").map(|c| Token::Op(c.to_string()));
-
-        op_add
-            .or(op_sub)
-            .or(op_mul)
-            .or(op_div)
-            .or(op_rem)
-            .or(op_eq)
-            .or(op_neq)
-            .or(op_less)
-            .or(op_less_eq)
-            .or(op_more)
-            .or(op_more_eq)
-            .or(op_bit_and)
-            .or(op_logical_and)
-            .or(op_bit_or)
-            .or(op_logical_or)
-            .or(op_bit_xor)
-            .or(op_join)
+        // Put the "long" tokens first, so they get parsed first
+        chumsky::primitive::choice((
+            chumsky::primitive::choice((
+                just("->").map(Token::Op),
+                just("==").map(Token::Op),
+                just("!=").map(Token::Op),
+                just("<=").map(Token::Op),
+                just(">=").map(Token::Op),
+                just("&&").map(Token::Op),
+                just("||").map(Token::Op),
+                just("++").map(Token::Op),
+            )),
+            chumsky::primitive::choice((
+                just("<").map(Token::Op),
+                just(">").map(Token::Op),
+                just("&").map(Token::Op),
+                just("|").map(Token::Op),
+                just("(").map(Token::Op),
+                just(")").map(Token::Op),
+                just(",").map(Token::Op),
+                just("=").map(Token::Op),
+                just(":").map(Token::Op),
+                just(".").map(Token::Op),
+                just(";").map(Token::Op),
+                just("[").map(Token::Op),
+                just("]").map(Token::Op),
+                just("{").map(Token::Op),
+                just("}").map(Token::Op),
+                just("|").map(Token::Op),
+                just("+").map(Token::Op),
+                just("-").then_ignore(just(">").not()).map(Token::Op),
+                just("*").map(Token::Op),
+                just("/").map(Token::Op),
+                just("%").map(Token::Op),
+                just("^").map(Token::Op),
+            )),
+        ))
     };
 
-    let kw_use = just("use").map(|_| Token::Use);
-    let kw_pub = just("pub").map(|_| Token::Pub);
-    let kw_arrow = just("->").map(|_| Token::Arrow);
-    let kw_let = just("let").map(|_| Token::Let);
-    let kw_in = just("in").map(|_| Token::In);
-    let kw_if = just("if").map(|_| Token::If);
-    let kw_then = just("then").map(|_| Token::Then);
-    let kw_else = just("else").map(|_| Token::Else);
-    let kw_true = just("true").map(|_| Token::Bool(true));
-    let kw_false = just("false").map(|_| Token::Bool(false));
-    let kw_where = just("where").map(|_| Token::Where);
-    let kw_match = just("match").map(|_| Token::Match);
-    let kw_when = just("when").map(|_| Token::When);
-    let kw_type = just("type").map(|_| Token::Type);
-    let kw_impl = just("impl").map(|_| Token::Impl);
-    let kw_enum = just("enum").map(|_| Token::Enum);
-    let kw_mod = just("mod").map(|_| Token::Mod);
-    let ident = ident().map(Token::Ident);
+    let ident = ident()
+        .map(|ident: &str| match ident {
+            "if" => Token::If,
+            "then" => Token::Then,
+            "else" => Token::Else,
+            "let" => Token::Let,
+            "in" => Token::In,
+            "where" => Token::Where,
+            "match" => Token::Match,
+            "when" => Token::When,
+            "type" => Token::Type,
+            "impl" => Token::Impl,
+            "enum" => Token::Enum,
+            "use" => Token::Use,
+            "pub" => Token::Pub,
+            "mod" => Token::Mod,
+            "true" => Token::Bool(true),
+            "false" => Token::Bool(false),
 
-    // A single token can be one of the above
-    let token = num
-        .or(str_)
-        .or(kw_use)
-        .or(kw_pub)
-        .or(kw_arrow)
-        .or(kw_let)
-        .or(kw_in)
-        .or(kw_if)
-        .or(kw_then)
-        .or(kw_else)
-        .or(kw_true)
-        .or(kw_false)
-        .or(kw_where)
-        .or(kw_match)
-        .or(kw_when)
-        .or(kw_impl)
-        .or(kw_type)
-        .or(kw_enum)
-        .or(kw_mod)
-        .or(ctrl)
-        .or(operator)
-        .or(ident)
-        .recover_with(skip_then_retry_until([]));
+            _ => Token::Ident(ident),
+        })
+        .or(just("$").map(|_| Token::Dollar));
 
-    let comment = just("#").then(take_until(just('\n'))).padded();
-
-    token
-        .map_with_span(|tok, span| (tok, span))
-        .padded_by(comment.repeated())
+    let comment = just("#")
+        .then(any().and_is(just('\n').not()).repeated())
         .padded()
+        .map(|(comment, ())| Token::Comment(comment));
+
+    num.or(str_)
+        .or(ident)
+        .or(operator)
+        .or(comment)
+        .map_with_span(|t, s| (t, s))
+        .padded()
+        .recover_with(skip_then_retry_until(any().ignored(), end()))
         .repeated()
+        .collect()
 }
 
-fn ident<C: text::Character, E: chumsky::Error<C>>(
-) -> impl Parser<C, C::Collection, Error = E> + Copy + Clone {
-    filter(|c: &C| {
-        let chr = c.to_char();
-        chr.is_ascii_alphabetic() || chr == '_' || chr == '$'
-    })
-    .map(Some)
-    .chain::<C, Vec<_>, _>(
-        filter(|c: &C| {
-            let chr = c.to_char();
-            chr.is_ascii_alphanumeric() || c.to_char() == '_'
-        })
-        .repeated(),
-    )
-    .collect()
+#[cfg(test)]
+mod tests {
+    use chumsky::span::SimpleSpan;
+    use chumsky::Parser;
+
+    use super::Token;
+
+    fn lex<'src>(code: &'src str) -> Vec<(Token<'src>, SimpleSpan)> {
+        let lexer = crate::lexer();
+        let lexer_res = lexer.parse(code);
+        let has_errs = lexer_res.has_errors();
+        let errs = lexer_res.errors();
+
+        assert!(
+            !has_errs,
+            "No errors expected, but found: {:?}",
+            errs.collect::<Vec<_>>()
+        );
+        lexer_res.output().unwrap().clone()
+    }
+
+    macro_rules! create_test_for_token {
+        ($name:ident => $exp:ty) => {
+            paste::paste! {
+                #[test]
+                fn [< test_lex_ $name >]() {
+                    let code = stringify!($name);
+                    let tokens = lex(code);
+                    let t = tokens.first().unwrap();
+                    assert!(matches!(t.0, $exp), "Expected {}, got: {:?}", stringify!($exp), t);
+                }
+            }
+        };
+    }
+
+    create_test_for_token!(if => Token::If);
+    create_test_for_token!(then => Token::Then);
+    create_test_for_token!(else => Token::Else);
+    create_test_for_token!(let => Token::Let);
+    create_test_for_token!(in => Token::In);
+    create_test_for_token!(where => Token::Where);
+    create_test_for_token!(match => Token::Match);
+    create_test_for_token!(when => Token::When);
+    create_test_for_token!(type => Token::Type);
+    create_test_for_token!(impl => Token::Impl);
+    create_test_for_token!(enum => Token::Enum);
+    create_test_for_token!(use => Token::Use);
+    create_test_for_token!(pub => Token::Pub);
+    create_test_for_token!(mod => Token::Mod);
+
+    #[test]
+    fn test_lex_arrow() {
+        let code = "->";
+        let tokens = lex(code);
+        let arrow = tokens.first().unwrap();
+        assert!(
+            matches!(arrow.0, Token::Op("->")),
+            "Expected Token::Arrow, got: {:?}",
+            arrow
+        );
+    }
 }
