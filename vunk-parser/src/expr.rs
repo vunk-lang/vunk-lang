@@ -286,7 +286,7 @@ fn ident_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, &'sr
 // ## Full example
 //
 // ```
-// foo A B = (A, B) -> A
+// foo A B: (A, B) -> A
 //     where A: Add I8 + Debug
 //           B: Into I8
 //           ;
