@@ -94,38 +94,42 @@ pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, 
 
     let operator = {
         // Put the "long" tokens first, so they get parsed first
-        //
-        just("->")
-            .map(Token::Op)
-            .or(just("==").map(Token::Op))
-            .or(just("!=").map(Token::Op))
-            .or(just("<=").map(Token::Op))
-            .or(just(">=").map(Token::Op))
-            .or(just("&&").map(Token::Op))
-            .or(just("||").map(Token::Op))
-            .or(just("++").map(Token::Op))
-            .or(just("<").map(Token::Op))
-            .or(just(">").map(Token::Op))
-            .or(just("&").map(Token::Op))
-            .or(just("|").map(Token::Op))
-            .or(just("(").map(Token::Op))
-            .or(just(")").map(Token::Op))
-            .or(just(",").map(Token::Op))
-            .or(just("=").map(Token::Op))
-            .or(just(":").map(Token::Op))
-            .or(just(".").map(Token::Op))
-            .or(just(";").map(Token::Op))
-            .or(just("[").map(Token::Op))
-            .or(just("]").map(Token::Op))
-            .or(just("{").map(Token::Op))
-            .or(just("}").map(Token::Op))
-            .or(just("|").map(Token::Op))
-            .or(just("+").map(Token::Op))
-            .or(just("-").then_ignore(just(">").not()).map(Token::Op))
-            .or(just("*").map(Token::Op))
-            .or(just("/").map(Token::Op))
-            .or(just("%").map(Token::Op))
-            .or(just("^").map(Token::Op))
+        chumsky::primitive::choice((
+            chumsky::primitive::choice((
+                just("->").map(Token::Op),
+                just("==").map(Token::Op),
+                just("!=").map(Token::Op),
+                just("<=").map(Token::Op),
+                just(">=").map(Token::Op),
+                just("&&").map(Token::Op),
+                just("||").map(Token::Op),
+                just("++").map(Token::Op),
+            )),
+            chumsky::primitive::choice((
+                just("<").map(Token::Op),
+                just(">").map(Token::Op),
+                just("&").map(Token::Op),
+                just("|").map(Token::Op),
+                just("(").map(Token::Op),
+                just(")").map(Token::Op),
+                just(",").map(Token::Op),
+                just("=").map(Token::Op),
+                just(":").map(Token::Op),
+                just(".").map(Token::Op),
+                just(";").map(Token::Op),
+                just("[").map(Token::Op),
+                just("]").map(Token::Op),
+                just("{").map(Token::Op),
+                just("}").map(Token::Op),
+                just("|").map(Token::Op),
+                just("+").map(Token::Op),
+                just("-").then_ignore(just(">").not()).map(Token::Op),
+                just("*").map(Token::Op),
+                just("/").map(Token::Op),
+                just("%").map(Token::Op),
+                just("^").map(Token::Op),
+            )),
+        ))
     };
 
     let ident = ident().map(|ident: &str| match ident {
