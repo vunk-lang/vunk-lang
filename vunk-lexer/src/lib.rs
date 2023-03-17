@@ -231,4 +231,16 @@ mod tests {
     create_test_for_token!(use => Token::Use);
     create_test_for_token!(pub => Token::Pub);
     create_test_for_token!(mod => Token::Mod);
+
+    #[test]
+    fn test_lex_arrow() {
+        let code = "->";
+        let tokens = lex(code);
+        let arrow = tokens.first().unwrap();
+        assert!(
+            matches!(arrow.0, Token::Arrow),
+            "Expected Token::Arrow, got: {:?}",
+            arrow
+        );
+    }
 }
