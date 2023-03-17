@@ -454,46 +454,29 @@ mod tests {
         ast_has_no_errs("foobar");
     }
 
-    fn decl_has_no_errs(code: &str) {
-        let res = vunk_lexer::lexer().parse(code);
-        assert!(
-            !res.has_errors(),
-            "No errors expected, but found: {:?}",
-            res.errors().collect::<Vec<_>>()
-        );
-        let tokens = res.into_output().unwrap();
-        let tokens = tokens.as_slice().spanned((code.len()..code.len()).into());
-        let res = decl_parser().parse(tokens);
-        assert!(
-            !res.has_errors(),
-            "No errors expected, but found: {:?} --- CODE: '{code}'",
-            res.errors().collect::<Vec<_>>()
-        );
-    }
-
     #[test]
     fn test_decl_var() {
-        decl_has_no_errs("foo: I8;");
+        ast_has_no_errs("foo: I8;");
     }
 
     #[test]
     fn test_decl_var_generic() {
-        decl_has_no_errs("foo A: A;");
+        ast_has_no_errs("foo A: A;");
     }
 
     #[test]
     fn test_decl_fn() {
-        decl_has_no_errs("foo: (I8) -> I8;");
+        ast_has_no_errs("foo: (I8) -> I8;");
     }
 
     #[test]
     fn test_decl_fn_generic() {
-        decl_has_no_errs("foo A: (A) -> A;");
+        ast_has_no_errs("foo A: (A) -> A;");
     }
 
     #[test]
     fn test_decl_fn_generic_2() {
-        decl_has_no_errs("foo A B: (A, B) -> A;");
+        ast_has_no_errs("foo A B: (A, B) -> A;");
     }
 
     #[test]
@@ -502,7 +485,7 @@ mod tests {
             foo A: (A) -> A
                 where A: Debug;
         "#;
-        decl_has_no_errs(code);
+        ast_has_no_errs(code);
     }
 
     #[test]
@@ -512,7 +495,7 @@ mod tests {
                 where A: Debug,
                       B: Debug;
         "#;
-        decl_has_no_errs(code);
+        ast_has_no_errs(code);
     }
 
     #[test]
@@ -521,7 +504,7 @@ mod tests {
             foo A: (A) -> A
                 where A: Add I8;
         "#;
-        decl_has_no_errs(code);
+        ast_has_no_errs(code);
     }
 
     #[test]
@@ -531,7 +514,7 @@ mod tests {
                 where A: Add I8,
                       B: Add I8;
         "#;
-        decl_has_no_errs(code);
+        ast_has_no_errs(code);
     }
 
     #[test]
@@ -540,7 +523,7 @@ mod tests {
             foo A: (A) -> A
                 where A: Add I8 + Debug;
         "#;
-        decl_has_no_errs(code);
+        ast_has_no_errs(code);
     }
 
     #[test]
@@ -550,6 +533,6 @@ mod tests {
                 where A: Add I8 + Debug,
                       B: Add I8 + Debug;
         "#;
-        decl_has_no_errs(code);
+        ast_has_no_errs(code);
     }
 }
