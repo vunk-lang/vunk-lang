@@ -205,14 +205,14 @@ impl Expr<'_> {
                     })
             };
 
-            bool_parser()
-                .or(int_parser())
-                .or(str_parser())
-                .or(list_parser)
-                .or(ident_parser().map(Expr::Ident))
-                .or(unary_parser)
+            decl_parser()
                 .or(binary_parser)
-                .or(decl_parser())
+                .or(unary_parser)
+                .or(list_parser)
+                .or(str_parser())
+                .or(int_parser())
+                .or(bool_parser())
+                .or(ident_parser().map(Expr::Ident))
         })
     }
 }
