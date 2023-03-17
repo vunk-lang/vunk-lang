@@ -612,4 +612,12 @@ mod tests {
         "#;
         ast_has_no_errs(code);
     }
+
+    #[test]
+    fn test_def_var() {
+        let code = r#"
+            foo = 1;
+        "#;
+        ast_has_no_errs(code);
+    }
 }
