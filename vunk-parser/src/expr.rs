@@ -768,4 +768,20 @@ mod tests {
         "#;
         ast_has_no_errs!(code);
     }
+
+    #[test]
+    fn test_def_rhs() {
+        let code = "true";
+        let res = vunk_lexer::lexer().parse(code);
+        assert!(!res.has_errors());
+        let tokens = res.into_output().unwrap();
+        let tokens = tokens.as_slice().spanned((code.len()..code.len()).into());
+        let expr_parser = Expr::parser();
+        let parse_res = DefRhs::parser(expr_parser).parse(tokens);
+        assert!(
+            !parse_res.has_errors(),
+            "No errors expected, but found: {:?}",
+            parse_res.errors().collect::<Vec<_>>()
+        );
+    }
 }
