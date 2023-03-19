@@ -180,50 +180,9 @@ impl Expr<'_> {
             // let float_parser = select! {
             // };
 
-            let binary_parser = {
-                let binary_op_parser = just(Token::Op("+"))
-                    .to(BinaryOp::Add)
-                    .or(just(Token::Op("-")).to(BinaryOp::Sub))
-                    .or(just(Token::Op("*")).to(BinaryOp::Mul))
-                    .or(just(Token::Op("/")).to(BinaryOp::Div))
-                    .or(just(Token::Op("%")).to(BinaryOp::Rem))
-                    .or(just(Token::Op("==")).to(BinaryOp::Eq))
-                    .or(just(Token::Op("!=")).to(BinaryOp::NotEq))
-                    .or(just(Token::Op("<")).to(BinaryOp::Less))
-                    .or(just(Token::Op("<=")).to(BinaryOp::LessEq))
-                    .or(just(Token::Op(">")).to(BinaryOp::More))
-                    .or(just(Token::Op(">=")).to(BinaryOp::MoreEq))
-                    .or(just(Token::Op("&")).to(BinaryOp::BitAnd))
-                    .or(just(Token::Op("&&")).to(BinaryOp::LogicalAnd))
-                    .or(just(Token::Op("|")).to(BinaryOp::BitOr))
-                    .or(just(Token::Op("||")).to(BinaryOp::LogicalOr))
-                    .or(just(Token::Op("^")).to(BinaryOp::BitXor))
-                    .or(just(Token::Op("++")).to(BinaryOp::Join));
-
-                let lhs = ident_parser()
-                    .map(Expr::Ident)
-                    .or(bool_parser())
-                    .or(int_parser())
-                    .or(list_parser(expr.clone()).map(Expr::List))
-                    .or({
-                        expr.clone()
-                            .delimited_by(just(Token::Op("(")), just(Token::Op(")")))
-                    });
-
-                let rhs = lhs.clone();
-
-                lhs.then(binary_op_parser)
-                    .then(rhs)
-                    .map(|((lhs, op), rhs)| Expr::Binary {
-                        op,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    })
-            };
-
             decl_parser()
                 .or(def_parser())
-                .or(binary_parser)
+                .or(binary_parser(expr.clone()))
                 .or(unary_parser(expr.clone()))
                 .or(list_parser(expr.clone()))
                 .or(str_parser())
@@ -260,6 +219,50 @@ fn unary_parser<'tokens, 'src: 'tokens>(
             expr: Box::new(expr),
         })
 }
+
+fn binary_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+) -> impl VunkParser<'tokens, 'src, Expr<'src>> {
+    let binary_op_parser = just(Token::Op("+"))
+        .to(BinaryOp::Add)
+        .or(just(Token::Op("-")).to(BinaryOp::Sub))
+        .or(just(Token::Op("*")).to(BinaryOp::Mul))
+        .or(just(Token::Op("/")).to(BinaryOp::Div))
+        .or(just(Token::Op("%")).to(BinaryOp::Rem))
+        .or(just(Token::Op("==")).to(BinaryOp::Eq))
+        .or(just(Token::Op("!=")).to(BinaryOp::NotEq))
+        .or(just(Token::Op("<")).to(BinaryOp::Less))
+        .or(just(Token::Op("<=")).to(BinaryOp::LessEq))
+        .or(just(Token::Op(">")).to(BinaryOp::More))
+        .or(just(Token::Op(">=")).to(BinaryOp::MoreEq))
+        .or(just(Token::Op("&")).to(BinaryOp::BitAnd))
+        .or(just(Token::Op("&&")).to(BinaryOp::LogicalAnd))
+        .or(just(Token::Op("|")).to(BinaryOp::BitOr))
+        .or(just(Token::Op("||")).to(BinaryOp::LogicalOr))
+        .or(just(Token::Op("^")).to(BinaryOp::BitXor))
+        .or(just(Token::Op("++")).to(BinaryOp::Join));
+
+    let lhs = ident_parser()
+        .map(Expr::Ident)
+        .or(bool_parser())
+        .or(int_parser())
+        .or(list_parser(expr_parser.clone()))
+        .or({
+            expr_parser.clone()
+                .delimited_by(just(Token::Op("(")), just(Token::Op(")")))
+        });
+
+    let rhs = lhs.clone();
+
+    lhs.then(binary_op_parser)
+        .then(rhs)
+        .map(|((lhs, op), rhs)| Expr::Binary {
+            op,
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+        })
+}
+
 
 
 fn bool_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
