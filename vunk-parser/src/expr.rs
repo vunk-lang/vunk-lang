@@ -523,23 +523,25 @@ impl DefRhs<'_> {
     pub fn parser<'tokens, 'src: 'tokens>(
         expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
     ) -> impl VunkParser<'tokens, 'src, DefRhs<'src>> + Clone {
-        binary_parser(expr_parser.clone())
-            .map(|(lhs, op, rhs)| DefRhs::Binary {
-                op,
-                lhs: Box::new(lhs),
-                rhs: Box::new(rhs),
-            })
+        list_parser(expr_parser.clone())
+            .map(DefRhs::List)
+            .or(str_parser().map(DefRhs::Str))
+            .or(int_parser().map(DefRhs::Integer))
+            .or(bool_parser().map(DefRhs::Bool))
             .or(
                 unary_parser(expr_parser.clone()).map(|(op, expr)| DefRhs::Unary {
                     op,
                     expr: Box::new(expr),
                 }),
             )
-            .or(list_parser(expr_parser.clone()).map(|v| DefRhs::List(v)))
-            .or(str_parser().map(DefRhs::Str))
-            .or(int_parser().map(DefRhs::Integer))
-            .or(bool_parser().map(DefRhs::Bool))
             .or(ident_parser().map(DefRhs::Ident))
+            .or(
+                binary_parser(expr_parser.clone()).map(|(lhs, op, rhs)| DefRhs::Binary {
+                    op,
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                }),
+            )
     }
 }
 
