@@ -180,22 +180,6 @@ impl Expr<'_> {
             // let float_parser = select! {
             // };
 
-            let unary_parser = {
-                let unary_op_parser = {
-                    let binary = just(Token::Op("~")).to(UnaryOp::BinaryNot);
-                    let logical = just(Token::Op("!")).to(UnaryOp::LogicalNot);
-
-                    binary.or(logical)
-                };
-
-                unary_op_parser
-                    .then(expr.clone())
-                    .map(|(op, expr)| Expr::Unary {
-                        op,
-                        expr: Box::new(expr),
-                    })
-            };
-
             let binary_parser = {
                 let binary_op_parser = just(Token::Op("+"))
                     .to(BinaryOp::Add)
@@ -240,8 +224,8 @@ impl Expr<'_> {
             decl_parser()
                 .or(def_parser())
                 .or(binary_parser)
-                .or(unary_parser)
-                .or(list_parser(expr.clone()).map(Expr::List))
+                .or(unary_parser(expr.clone()))
+                .or(list_parser(expr.clone()))
                 .or(str_parser())
                 .or(int_parser())
                 .or(bool_parser())
@@ -252,12 +236,31 @@ impl Expr<'_> {
 
 fn list_parser<'tokens, 'src: 'tokens>(
     expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
-) -> impl VunkParser<'tokens, 'src, Vec<Expr<'src>>> {
+) -> impl VunkParser<'tokens, 'src, Expr<'src>> {
     let left_br = just(Token::Op("["));
     let right_br = just(Token::Op("]"));
 
-    expr_parser.delimited_by(left_br, right_br)
+    expr_parser.delimited_by(left_br, right_br).repeated().collect().map(|v| Expr::List(v))
 }
+
+fn unary_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+) -> impl VunkParser<'tokens, 'src, Expr<'src>> {
+    let unary_op_parser = {
+        let binary = just(Token::Op("~")).to(UnaryOp::BinaryNot);
+        let logical = just(Token::Op("!")).to(UnaryOp::LogicalNot);
+
+        binary.or(logical)
+    };
+
+    unary_op_parser
+        .then(expr_parser)
+        .map(|(op, expr)| Expr::Unary {
+            op,
+            expr: Box::new(expr),
+        })
+}
+
 
 fn bool_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
     select! {
