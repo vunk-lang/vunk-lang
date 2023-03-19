@@ -551,32 +551,37 @@ mod tests {
     use super::*;
     use chumsky::{prelude::Input, Parser};
 
-    fn ast_has_no_errs(code: &str) {
-        let res = vunk_lexer::lexer().parse(code);
-        assert!(!res.has_errors());
-        let tokens = res.into_output().unwrap();
-        let tokens = tokens.as_slice().spanned((code.len()..code.len()).into());
-        let res = Expr::parser().parse(tokens);
-        assert!(
-            !res.has_errors(),
-            "No errors expected, but found: {:?}",
-            res.errors().collect::<Vec<_>>()
-        );
+    macro_rules! ast_has_no_errs {
+        ($code:ident) => {
+            let res = vunk_lexer::lexer().parse($code);
+            assert!(!res.has_errors());
+            let tokens = res.into_output().unwrap();
+            let tokens = tokens.as_slice().spanned(($code.len()..$code.len()).into());
+            let res = Expr::parser().parse(tokens);
+            assert!(
+                !res.has_errors(),
+                "No errors expected, but found: {:?}",
+                res.errors().collect::<Vec<_>>()
+            );
+        }
     }
 
     #[test]
     fn test_ast_bool() {
-        ast_has_no_errs("false");
+        let code = "false";
+        ast_has_no_errs!(code);
     }
 
     #[test]
     fn test_ast_int() {
-        ast_has_no_errs("123");
+        let code = "123";
+        ast_has_no_errs!(code);
     }
 
     #[test]
     fn test_ast_ident() {
-        ast_has_no_errs("foobar");
+        let code = "foobar";
+        ast_has_no_errs!(code);
     }
 
     fn decl_has_no_errs(code: &str) {
@@ -683,7 +688,7 @@ mod tests {
         let code = r#"
             1 + 2
         "#;
-        ast_has_no_errs(code);
+        ast_has_no_errs!(code);
     }
 
     #[test]
@@ -691,7 +696,7 @@ mod tests {
         let code = r#"
             foo = 1;
         "#;
-        ast_has_no_errs(code);
+        ast_has_no_errs!(code);
     }
 
     #[test]
@@ -699,7 +704,7 @@ mod tests {
         let code = r#"
             foo A = A;
         "#;
-        ast_has_no_errs(code);
+        ast_has_no_errs!(code);
     }
 
     #[test]
@@ -707,7 +712,7 @@ mod tests {
         let code = r#"
             foo = () -> 1;
         "#;
-        ast_has_no_errs(code);
+        ast_has_no_errs!(code);
     }
 
     #[test]
@@ -715,7 +720,7 @@ mod tests {
         let code = r#"
             foo = (a: I8) -> a;
         "#;
-        ast_has_no_errs(code);
+        ast_has_no_errs!(code);
     }
 
     #[test]
@@ -723,7 +728,7 @@ mod tests {
         let code = r#"
             foo = (a: I8) -> a + 1;
         "#;
-        ast_has_no_errs(code);
+        ast_has_no_errs!(code);
     }
 
     #[test]
@@ -733,7 +738,7 @@ mod tests {
                 then a - 1
                 else a;
         "#;
-        ast_has_no_errs(code);
+        ast_has_no_errs!(code);
     }
 
     #[test]
@@ -746,7 +751,7 @@ mod tests {
                 then 0
                 else a - 1;
         "#;
-        ast_has_no_errs(code);
+        ast_has_no_errs!(code);
     }
 
     #[test]
@@ -754,7 +759,7 @@ mod tests {
         let code = r#"
             foo A = (a: A) -> a + 1;
         "#;
-        ast_has_no_errs(code);
+        ast_has_no_errs!(code);
     }
 
     #[test]
@@ -762,6 +767,6 @@ mod tests {
         let code = r#"
             foo A B = (a: A, b: B) -> a + b;
         "#;
-        ast_has_no_errs(code);
+        ast_has_no_errs!(code);
     }
 }
