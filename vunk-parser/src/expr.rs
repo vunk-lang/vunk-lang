@@ -509,7 +509,7 @@ fn def_parser<'tokens, 'src: 'tokens>(
         ident_parser() // name of the declaration
             .then(ident_parser().repeated().collect().or_not()) // Generic arguments
             .then_ignore(just(Token::Op("=")))
-            .then( DefRhs::parser(expr_parser))
+            .then(DefRhs::parser(expr_parser))
             .then_ignore(just(Token::Op(";")))
             .map(|((name, generics), rhs)| Expr::Def {
                 lhs: name,
