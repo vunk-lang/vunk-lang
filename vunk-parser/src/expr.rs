@@ -70,6 +70,7 @@ pub enum Expr<'src> {
 
     Def {
         lhs: &'src str,
+        generics: Option<Vec<&'src str>>,
         rhs: DefRhs<'src>,
     },
 }
@@ -145,7 +146,7 @@ pub enum DefRhs<'src> {
     Func {
         args: Vec<DeclArg<'src>>,
         block: Box<Expr<'src>>,
-    }
+    },
 }
 
 type ParserInput<'tokens, 'src> =
@@ -181,7 +182,7 @@ impl Expr<'_> {
             // };
 
             decl_parser()
-                .or(def_parser())
+                .or(def_parser(expr.clone()))
                 .or(
                     binary_parser(expr.clone()).map(|(lhs, op, rhs)| Expr::Binary {
                         op,
@@ -496,7 +497,9 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<
 // There are no generic bounds here, because if generics are in use, we expect a declaration to be
 // there.
 //
-fn def_parser<'tokens, 'src: 'tokens>() -> impl Parser<
+fn def_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone + 'tokens,
+) -> impl Parser<
     'tokens,
     ParserInput<'tokens, 'src>,
     Expr<'src>,
@@ -508,15 +511,39 @@ fn def_parser<'tokens, 'src: 'tokens>() -> impl Parser<
             .then_ignore(just(Token::Op("=")))
             .then({
                 // after the assignment '=' we expect an expression
-                Expr::parser()
+                DefRhs::parser(expr_parser)
             })
             .then_ignore(just(Token::Op(";")))
-            .map(|((name, generics), expr)| Expr::Def {
+            .map(|((name, generics), rhs)| Expr::Def {
                 lhs: name,
                 generics,
-                rhs: Box::new(expr),
+                rhs,
             })
     })
+}
+
+impl DefRhs<'_> {
+    pub fn parser<'tokens, 'src: 'tokens>(
+        expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+    ) -> impl VunkParser<'tokens, 'src, DefRhs<'src>> + Clone {
+        binary_parser(expr_parser.clone())
+            .map(|(lhs, op, rhs)| DefRhs::Binary {
+                op,
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+            })
+            .or(
+                unary_parser(expr_parser.clone()).map(|(op, expr)| DefRhs::Unary {
+                    op,
+                    expr: Box::new(expr),
+                }),
+            )
+            .or(list_parser(expr_parser.clone()).map(|v| DefRhs::List(v)))
+            .or(str_parser().map(DefRhs::Str))
+            .or(int_parser().map(DefRhs::Integer))
+            .or(bool_parser().map(DefRhs::Bool))
+            .or(ident_parser().map(DefRhs::Ident))
+    }
 }
 
 #[cfg(test)]
