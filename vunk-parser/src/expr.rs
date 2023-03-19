@@ -180,13 +180,6 @@ impl Expr<'_> {
             // let float_parser = select! {
             // };
 
-            let list_parser = {
-                let left_br = just(Token::Op("["));
-                let right_br = just(Token::Op("]"));
-
-                expr.clone().delimited_by(left_br, right_br)
-            };
-
             let unary_parser = {
                 let unary_op_parser = {
                     let binary = just(Token::Op("~")).to(UnaryOp::BinaryNot);
@@ -227,7 +220,7 @@ impl Expr<'_> {
                     .map(Expr::Ident)
                     .or(bool_parser())
                     .or(int_parser())
-                    .or(list_parser.clone())
+                    .or(list_parser(expr.clone()).map(Expr::List))
                     .or({
                         expr.clone()
                             .delimited_by(just(Token::Op("(")), just(Token::Op(")")))
@@ -248,13 +241,22 @@ impl Expr<'_> {
                 .or(def_parser())
                 .or(binary_parser)
                 .or(unary_parser)
-                .or(list_parser)
+                .or(list_parser(expr.clone()).map(Expr::List))
                 .or(str_parser())
                 .or(int_parser())
                 .or(bool_parser())
                 .or(ident_parser().map(Expr::Ident))
         })
     }
+}
+
+fn list_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+) -> impl VunkParser<'tokens, 'src, Vec<Expr<'src>>> {
+    let left_br = just(Token::Op("["));
+    let right_br = just(Token::Op("]"));
+
+    expr_parser.delimited_by(left_br, right_br)
 }
 
 fn bool_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
