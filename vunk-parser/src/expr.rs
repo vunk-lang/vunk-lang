@@ -210,9 +210,9 @@ fn list_parser<'tokens, 'src: 'tokens>(
     let right_br = just(Token::Op("]"));
 
     expr_parser
-        .delimited_by(left_br, right_br)
         .repeated()
         .collect()
+        .delimited_by(left_br, right_br)
 }
 
 fn unary_parser<'tokens, 'src: 'tokens>(
