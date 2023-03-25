@@ -522,8 +522,42 @@ fn def_parser<'tokens, 'src: 'tokens>(
 
 impl DefRhs<'_> {
     pub fn parser<'tokens, 'src: 'tokens>(
-        expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+        expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone + 'tokens,
     ) -> impl VunkParser<'tokens, 'src, DefRhs<'src>> + Clone {
+        fn func_impl_parser<'tokens, 'src: 'tokens>(
+            expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone + 'tokens,
+        ) -> impl VunkParser<'tokens, 'src, DefRhs<'src>> {
+            fn args_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Vec<DeclArg<'src>>> {
+                let open_par = just(Token::Op("("));
+                let close_par = just(Token::Op(")"));
+                let comma = just(Token::Op(","));
+                let decl = just(Token::Op(":"));
+
+                ident_parser()
+                    .then_ignore(decl)
+                    .then(type_parser())
+                    .map(|(name, ty)| {
+                        DeclArg {
+                            name: Some(name),
+                            ty: DeclType::TypeName(ty),
+                        }
+                    })
+                    .separated_by(comma)
+                    .collect::<Vec<DeclArg<'_>>>()
+                    .delimited_by(open_par, close_par)
+            }
+
+            args_parser()
+                .then_ignore(just(Token::Op("->")))
+                .then(expr_parser)
+                .map(|(args, expr)| {
+                    DefRhs::Func {
+                        args,
+                        block: Box::new(expr),
+                    }
+                })
+        }
+
         list_parser(expr_parser.clone())
             .map(DefRhs::List)
             .or(str_parser().map(DefRhs::Str))
@@ -543,6 +577,7 @@ impl DefRhs<'_> {
                     rhs: Box::new(rhs),
                 }),
             )
+            .or(func_impl_parser(expr_parser.clone()))
     }
 }
 
