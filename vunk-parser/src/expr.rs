@@ -204,6 +204,12 @@ impl Expr<'_> {
                         fals: Box::new(fals),
                     })
                 })
+                .or({
+                    letin_parser(expr.clone()).map(|(exprs, sub)| Expr::LetIn {
+                        exprs,
+                        sub: Box::new(sub),
+                    })
+                })
                 .or(decl_parser())
                 .or(def_parser(expr.clone()))
                 .or(ident_parser().map(Expr::Ident))
@@ -287,6 +293,20 @@ fn ifelse_parser<'tokens, 'src: 'tokens>(
         .then(expr_parser.clone())
         .map(|((cond, t), f)| {
             (cond, t, f)
+        })
+}
+
+fn letin_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+) -> impl VunkParser<'tokens, 'src, (Vec<Expr<'src>>, Expr<'src>)> {
+    just(Token::Let)
+        .ignore_then({
+            expr_parser.clone().then_ignore(just(Token::Op(";"))).repeated().collect::<Vec<_>>()
+        })
+        .then_ignore(just(Token::In))
+        .then(expr_parser)
+        .map(|(exprs, sub)| {
+            (exprs, sub)
         })
 }
 
