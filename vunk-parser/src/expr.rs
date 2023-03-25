@@ -380,7 +380,7 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<
         //
         //  Returns the Decl::Func variant
         fn func_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, DeclType<'src>> {
-            let arrow = just(Token::Op("-")).then(just(Token::Op(">")));
+            let arrow = just(Token::Op("->"));
 
             // Parser for a list of arguments
             //
