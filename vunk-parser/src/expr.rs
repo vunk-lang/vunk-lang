@@ -356,22 +356,6 @@ fn ident_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, &'sr
 //
 fn decl_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
     chumsky::recursive::recursive(|_decl_parser| {
-        // Parser for a Type
-        //
-        //  The name of the type
-        //    v
-        // `Result T E`
-        //         ^ ^
-        //         Generics of the type
-        fn type_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, TypeName<'src>> {
-            ident_parser()
-                .then(ident_parser().repeated().collect().or_not())
-                .map(|(ident, generics)| TypeName {
-                    name: ident,
-                    generics,
-                })
-        }
-
         // Parser for a function signature without the "where"-part
         //
         // E.G.: `(A) -> A`
@@ -473,6 +457,22 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<
                 },
             )
     })
+}
+
+// Parser for a Type
+//
+//  The name of the type
+//    v
+// `Result T E`
+//         ^ ^
+//         Generics of the type
+fn type_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, TypeName<'src>> {
+    ident_parser()
+        .then(ident_parser().repeated().collect().or_not())
+        .map(|(ident, generics)| TypeName {
+            name: ident,
+            generics,
+        })
 }
 
 // Parser for a definition
