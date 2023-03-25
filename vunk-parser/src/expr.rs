@@ -553,7 +553,7 @@ mod tests {
     macro_rules! ast_has_no_errs {
         ($code:ident) => {
             let res = vunk_lexer::lexer().parse($code);
-            assert!(!res.has_errors());
+            assert!(!res.has_errors(), "Error while tokenizing: {:?}", res.errors().collect::<Vec<_>>());
             let tokens = res.into_output().unwrap();
             let tokens = tokens.as_slice().spanned(($code.len()..$code.len()).into());
             let res = Expr::parser().parse(tokens);
