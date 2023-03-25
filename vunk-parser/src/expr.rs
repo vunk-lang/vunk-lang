@@ -197,6 +197,13 @@ impl Expr<'_> {
                     op,
                     expr: Box::new(expr),
                 }))
+                .or({
+                    ifelse_parser(expr.clone()).map(|(cond, tru, fals)| Expr::IfElse {
+                        condition: Box::new(cond),
+                        tru: Box::new(tru),
+                        fals: Box::new(fals),
+                    })
+                })
                 .or(decl_parser())
                 .or(def_parser(expr.clone()))
                 .or(ident_parser().map(Expr::Ident))
@@ -267,6 +274,20 @@ fn binary_parser<'tokens, 'src: 'tokens>(
     lhs.then(binary_op_parser)
         .then(rhs)
         .map(|((lhs, op), rhs)| (lhs, op, rhs))
+}
+
+fn ifelse_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+) -> impl VunkParser<'tokens, 'src, (Expr<'src>, Expr<'src>, Expr<'src>)> {
+    just(Token::If)
+        .ignore_then(expr_parser.clone())
+        .then_ignore(just(Token::Then))
+        .then(expr_parser.clone())
+        .then_ignore(just(Token::Else))
+        .then(expr_parser.clone())
+        .map(|((cond, t), f)| {
+            (cond, t, f)
+        })
 }
 
 fn bool_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, bool> + Clone {
