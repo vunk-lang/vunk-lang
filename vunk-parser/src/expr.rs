@@ -186,7 +186,6 @@ impl Expr<'_> {
                 .or(int_parser().map(Expr::Integer))
                 .or(bool_parser().map(Expr::Bool))
                 .or(list_parser(expr.clone()).map(|v| Expr::List(v)))
-                .or(ident_parser().map(Expr::Ident))
                 .or(
                     binary_parser(expr.clone()).map(|(lhs, op, rhs)| Expr::Binary {
                         op,
@@ -200,6 +199,7 @@ impl Expr<'_> {
                 }))
                 .or(decl_parser())
                 .or(def_parser(expr.clone()))
+                .or(ident_parser().map(Expr::Ident))
         })
     }
 }
