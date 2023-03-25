@@ -181,8 +181,12 @@ impl Expr<'_> {
             // let float_parser = select! {
             // };
 
-            decl_parser()
-                .or(def_parser(expr.clone()))
+            str_parser()
+                .map(Expr::Str)
+                .or(int_parser().map(Expr::Integer))
+                .or(bool_parser().map(Expr::Bool))
+                .or(list_parser(expr.clone()).map(|v| Expr::List(v)))
+                .or(ident_parser().map(Expr::Ident))
                 .or(
                     binary_parser(expr.clone()).map(|(lhs, op, rhs)| Expr::Binary {
                         op,
@@ -194,11 +198,8 @@ impl Expr<'_> {
                     op,
                     expr: Box::new(expr),
                 }))
-                .or(list_parser(expr.clone()).map(|v| Expr::List(v)))
-                .or(str_parser().map(Expr::Str))
-                .or(int_parser().map(Expr::Integer))
-                .or(bool_parser().map(Expr::Bool))
-                .or(ident_parser().map(Expr::Ident))
+                .or(decl_parser())
+                .or(def_parser(expr.clone()))
         })
     }
 }
