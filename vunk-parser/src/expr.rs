@@ -562,7 +562,7 @@ mod tests {
                 "No errors expected, but found: {:?}",
                 res.errors().collect::<Vec<_>>()
             );
-        }
+        };
     }
 
     #[test]
