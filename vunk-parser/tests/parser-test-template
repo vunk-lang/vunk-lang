@@ -1,0 +1,20 @@
+#[test]
+fn {name}() {{
+    let code = include_str!("{path}");
+
+    let lexer = vunk_lexer::lexer();
+    let lexer_res = lexer.parse(code);
+    let has_errs = lexer_res.has_errors();
+    assert!(!has_errs);
+
+    let tokens = lexer_res.into_output().unwrap();
+    let tokens = tokens.as_slice().spanned((code.len()..code.len()).into());
+
+    let res = Expr::parser().parse(tokens);
+    assert!(
+        !res.has_errors(),
+        "No errors expected, but found: {{:?}} --- CODE: '{{code}}'",
+        res.errors().collect::<Vec<_>>()
+    );
+}}
+
