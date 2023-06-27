@@ -71,7 +71,7 @@ pub enum Expr<'src> {
     Def {
         lhs: &'src str,
         generics: Option<Vec<&'src str>>,
-        rhs: Box<Expr<'src>>,
+        rhs: DefRhs<'src>,
     },
 }
 
@@ -110,6 +110,45 @@ pub struct DeclArg<'src> {
     pub ty: DeclType<'src>,
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum DefRhs<'src> {
+    Bool(bool),
+    Integer(Integer),
+    Float(Float),
+    Str(&'src str),
+    List(Vec<Expr<'src>>),
+
+    Ident(&'src str),
+
+    Unary {
+        op: UnaryOp,
+        expr: Box<Expr<'src>>,
+    },
+
+    Binary {
+        lhs: Box<Expr<'src>>,
+        op: BinaryOp,
+        rhs: Box<Expr<'src>>,
+    },
+
+    LetIn {
+        exprs: Vec<Expr<'src>>,
+        sub: Box<Expr<'src>>,
+    },
+
+    IfElse {
+        condition: Box<Expr<'src>>,
+        tru: Box<Expr<'src>>,
+        fals: Box<Expr<'src>>,
+    },
+
+    Func {
+        args: Vec<DeclArg<'src>>,
+        block: Box<Expr<'src>>,
+    },
+}
+
 type ParserInput<'tokens, 'src> =
     chumsky::input::SpannedInput<Token<'src>, SimpleSpan, &'tokens [(Token<'src>, SimpleSpan)]>;
 
@@ -142,90 +181,142 @@ impl Expr<'_> {
             // let float_parser = select! {
             // };
 
-            let list_parser = {
-                let left_br = just(Token::Op("["));
-                let right_br = just(Token::Op("]"));
-
-                expr.clone().delimited_by(left_br, right_br)
-            };
-
-            let unary_parser = {
-                let unary_op_parser = {
-                    let binary = just(Token::Op("~")).to(UnaryOp::BinaryNot);
-                    let logical = just(Token::Op("!")).to(UnaryOp::LogicalNot);
-
-                    binary.or(logical)
-                };
-
-                unary_op_parser
-                    .then(expr.clone())
-                    .map(|(op, expr)| Expr::Unary {
-                        op,
-                        expr: Box::new(expr),
-                    })
-            };
-
-            let binary_parser = {
-                let binary_op_parser = just(Token::Op("+"))
-                    .to(BinaryOp::Add)
-                    .or(just(Token::Op("-")).to(BinaryOp::Sub))
-                    .or(just(Token::Op("*")).to(BinaryOp::Mul))
-                    .or(just(Token::Op("/")).to(BinaryOp::Div))
-                    .or(just(Token::Op("%")).to(BinaryOp::Rem))
-                    .or(just(Token::Op("==")).to(BinaryOp::Eq))
-                    .or(just(Token::Op("!=")).to(BinaryOp::NotEq))
-                    .or(just(Token::Op("<")).to(BinaryOp::Less))
-                    .or(just(Token::Op("<=")).to(BinaryOp::LessEq))
-                    .or(just(Token::Op(">")).to(BinaryOp::More))
-                    .or(just(Token::Op(">=")).to(BinaryOp::MoreEq))
-                    .or(just(Token::Op("&")).to(BinaryOp::BitAnd))
-                    .or(just(Token::Op("&&")).to(BinaryOp::LogicalAnd))
-                    .or(just(Token::Op("|")).to(BinaryOp::BitOr))
-                    .or(just(Token::Op("||")).to(BinaryOp::LogicalOr))
-                    .or(just(Token::Op("^")).to(BinaryOp::BitXor))
-                    .or(just(Token::Op("++")).to(BinaryOp::Join));
-
-                let lhs = ident_parser()
-                    .map(Expr::Ident)
-                    .or(bool_parser())
-                    .or(int_parser())
-                    .or(list_parser.clone())
-                    .or({
-                        expr.clone()
-                            .delimited_by(just(Token::Op("(")), just(Token::Op(")")))
-                    });
-
-                let rhs = lhs.clone();
-
-                lhs.then(binary_op_parser)
-                    .then(rhs)
-                    .map(|((lhs, op), rhs)| Expr::Binary {
+            str_parser()
+                .map(Expr::Str)
+                .or(int_parser().map(Expr::Integer))
+                .or(bool_parser().map(Expr::Bool))
+                .or(list_parser(expr.clone()).map(|v| Expr::List(v)))
+                .or(
+                    binary_parser(expr.clone()).map(|(lhs, op, rhs)| Expr::Binary {
                         op,
                         lhs: Box::new(lhs),
                         rhs: Box::new(rhs),
+                    }),
+                )
+                .or(unary_parser(expr.clone()).map(|(op, expr)| Expr::Unary {
+                    op,
+                    expr: Box::new(expr),
+                }))
+                .or({
+                    ifelse_parser(expr.clone()).map(|(cond, tru, fals)| Expr::IfElse {
+                        condition: Box::new(cond),
+                        tru: Box::new(tru),
+                        fals: Box::new(fals),
                     })
-            };
-
-            decl_parser()
-                .or(binary_parser)
-                .or(unary_parser)
-                .or(list_parser)
-                .or(str_parser())
-                .or(int_parser())
-                .or(bool_parser())
+                })
+                .or({
+                    letin_parser(expr.clone()).map(|(exprs, sub)| Expr::LetIn {
+                        exprs,
+                        sub: Box::new(sub),
+                    })
+                })
+                .or(decl_parser())
+                .or(def_parser(expr.clone()))
                 .or(ident_parser().map(Expr::Ident))
         })
     }
 }
 
-fn bool_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
+fn list_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+) -> impl VunkParser<'tokens, 'src, Vec<Expr<'src>>> {
+    let left_br = just(Token::Op("["));
+    let right_br = just(Token::Op("]"));
+
+    expr_parser
+        .repeated()
+        .collect()
+        .delimited_by(left_br, right_br)
+}
+
+fn unary_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+) -> impl VunkParser<'tokens, 'src, (UnaryOp, Expr<'src>)> {
+    let unary_op_parser = {
+        let binary = just(Token::Op("~")).to(UnaryOp::BinaryNot);
+        let logical = just(Token::Op("!")).to(UnaryOp::LogicalNot);
+
+        binary.or(logical)
+    };
+
+    unary_op_parser.then(expr_parser)
+}
+
+fn binary_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+) -> impl VunkParser<'tokens, 'src, (Expr<'src>, BinaryOp, Expr<'src>)> {
+    let binary_op_parser = just(Token::Op("+"))
+        .to(BinaryOp::Add)
+        .or(just(Token::Op("-")).to(BinaryOp::Sub))
+        .or(just(Token::Op("*")).to(BinaryOp::Mul))
+        .or(just(Token::Op("/")).to(BinaryOp::Div))
+        .or(just(Token::Op("%")).to(BinaryOp::Rem))
+        .or(just(Token::Op("==")).to(BinaryOp::Eq))
+        .or(just(Token::Op("!=")).to(BinaryOp::NotEq))
+        .or(just(Token::Op("<")).to(BinaryOp::Less))
+        .or(just(Token::Op("<=")).to(BinaryOp::LessEq))
+        .or(just(Token::Op(">")).to(BinaryOp::More))
+        .or(just(Token::Op(">=")).to(BinaryOp::MoreEq))
+        .or(just(Token::Op("&")).to(BinaryOp::BitAnd))
+        .or(just(Token::Op("&&")).to(BinaryOp::LogicalAnd))
+        .or(just(Token::Op("|")).to(BinaryOp::BitOr))
+        .or(just(Token::Op("||")).to(BinaryOp::LogicalOr))
+        .or(just(Token::Op("^")).to(BinaryOp::BitXor))
+        .or(just(Token::Op("++")).to(BinaryOp::Join));
+
+    let lhs = ident_parser()
+        .map(Expr::Ident)
+        .or(bool_parser().map(Expr::Bool))
+        .or(int_parser().map(Expr::Integer))
+        .or(list_parser(expr_parser.clone()).map(|v| Expr::List(v)))
+        .or({
+            expr_parser
+                .clone()
+                .delimited_by(just(Token::Op("(")), just(Token::Op(")")))
+        });
+
+    let rhs = lhs.clone();
+
+    lhs.then(binary_op_parser)
+        .then(rhs)
+        .map(|((lhs, op), rhs)| (lhs, op, rhs))
+}
+
+fn ifelse_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+) -> impl VunkParser<'tokens, 'src, (Expr<'src>, Expr<'src>, Expr<'src>)> {
+    just(Token::If)
+        .ignore_then(expr_parser.clone())
+        .then_ignore(just(Token::Then))
+        .then(expr_parser.clone())
+        .then_ignore(just(Token::Else))
+        .then(expr_parser.clone())
+        .map(|((cond, t), f)| {
+            (cond, t, f)
+        })
+}
+
+fn letin_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone,
+) -> impl VunkParser<'tokens, 'src, (Vec<Expr<'src>>, Expr<'src>)> {
+    just(Token::Let)
+        .ignore_then({
+            expr_parser.clone().then_ignore(just(Token::Op(";"))).repeated().collect::<Vec<_>>()
+        })
+        .then_ignore(just(Token::In))
+        .then(expr_parser)
+        .map(|(exprs, sub)| {
+            (exprs, sub)
+        })
+}
+
+fn bool_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, bool> + Clone {
     select! {
-        Token::Bool(true) => Expr::Bool(true),
-        Token::Bool(false) => Expr::Bool(false),
+        Token::Bool(bl) => bl,
     }
 }
 
-fn int_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
+fn int_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Integer> {
     let numstr_parser = select! {
         Token::Num(numstr) => numstr,
     };
@@ -263,12 +354,11 @@ fn int_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'
         .or(u16_parser)
         .or(u32_parser)
         .or(u64_parser)
-        .map(Expr::Integer)
 }
 
-fn str_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
+fn str_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, &'src str> {
     select! {
-        Token::Str(s) => Expr::Str(s),
+        Token::Str(s) => s
     }
 }
 
@@ -307,22 +397,6 @@ fn ident_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, &'sr
 //
 fn decl_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<'src>> {
     chumsky::recursive::recursive(|_decl_parser| {
-        // Parser for a Type
-        //
-        //  The name of the type
-        //    v
-        // `Result T E`
-        //         ^ ^
-        //         Generics of the type
-        fn type_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, TypeName<'src>> {
-            ident_parser()
-                .then(ident_parser().repeated().collect().or_not())
-                .map(|(ident, generics)| TypeName {
-                    name: ident,
-                    generics,
-                })
-        }
-
         // Parser for a function signature without the "where"-part
         //
         // E.G.: `(A) -> A`
@@ -426,37 +500,168 @@ fn decl_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Expr<
     })
 }
 
+// Parser for a Type
+//
+//  The name of the type
+//    v
+// `Result T E`
+//         ^ ^
+//         Generics of the type
+fn type_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, TypeName<'src>> {
+    ident_parser()
+        .then(ident_parser().repeated().collect().or_not())
+        .map(|(ident, generics)| TypeName {
+            name: ident,
+            generics,
+        })
+}
+
+// Parser for a definition
+//
+// ## Short example
+//
+// ```
+// foo = 1;
+// ```
+//
+// Declares `foo` to be 1.
+//
+// ## Full example
+//
+// ```
+// add A A = (a: A, b: A) -> a + b;
+// ```
+//
+// Declares a variable `add` generic over `A`
+// to be a function with arguments `a` and `b` of type `A`
+// and the implementation `a + b`.
+//
+// There are no generic bounds here, because if generics are in use, we expect a declaration to be
+// there.
+//
+fn def_parser<'tokens, 'src: 'tokens>(
+    expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone + 'tokens,
+) -> impl Parser<
+    'tokens,
+    ParserInput<'tokens, 'src>,
+    Expr<'src>,
+    chumsky::extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>,
+> + Clone {
+    chumsky::recursive::recursive(|_def_parser| {
+        ident_parser() // name of the declaration
+            .then(ident_parser().repeated().collect().or_not()) // Generic arguments
+            .then_ignore(just(Token::Op("=")))
+            .then(DefRhs::parser(expr_parser))
+            .then_ignore(just(Token::Op(";")))
+            .map(|((name, generics), rhs)| Expr::Def {
+                lhs: name,
+                generics,
+                rhs,
+            })
+    })
+}
+
+impl DefRhs<'_> {
+    pub fn parser<'tokens, 'src: 'tokens>(
+        expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone + 'tokens,
+    ) -> impl VunkParser<'tokens, 'src, DefRhs<'src>> + Clone {
+        fn func_impl_parser<'tokens, 'src: 'tokens>(
+            expr_parser: impl VunkParser<'tokens, 'src, Expr<'src>> + Clone + 'tokens,
+        ) -> impl VunkParser<'tokens, 'src, DefRhs<'src>> {
+            fn args_parser<'tokens, 'src: 'tokens>() -> impl VunkParser<'tokens, 'src, Vec<DeclArg<'src>>> {
+                let open_par = just(Token::Op("("));
+                let close_par = just(Token::Op(")"));
+                let comma = just(Token::Op(","));
+                let decl = just(Token::Op(":"));
+
+                ident_parser()
+                    .then_ignore(decl)
+                    .then(type_parser())
+                    .map(|(name, ty)| {
+                        DeclArg {
+                            name: Some(name),
+                            ty: DeclType::TypeName(ty),
+                        }
+                    })
+                    .separated_by(comma)
+                    .collect::<Vec<DeclArg<'_>>>()
+                    .delimited_by(open_par, close_par)
+            }
+
+            args_parser()
+                .then_ignore(just(Token::Op("->")))
+                .then(expr_parser)
+                .map(|(args, expr)| {
+                    DefRhs::Func {
+                        args,
+                        block: Box::new(expr),
+                    }
+                })
+        }
+
+        list_parser(expr_parser.clone())
+            .map(DefRhs::List)
+            .or(str_parser().map(DefRhs::Str))
+            .or(int_parser().map(DefRhs::Integer))
+            .or(bool_parser().map(DefRhs::Bool))
+            .or(
+                unary_parser(expr_parser.clone()).map(|(op, expr)| DefRhs::Unary {
+                    op,
+                    expr: Box::new(expr),
+                }),
+            )
+            .or(ident_parser().map(DefRhs::Ident))
+            .or(
+                binary_parser(expr_parser.clone()).map(|(lhs, op, rhs)| DefRhs::Binary {
+                    op,
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                }),
+            )
+            .or(func_impl_parser(expr_parser.clone()))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use chumsky::{prelude::Input, Parser};
 
-    fn ast_has_no_errs(code: &str) {
-        let res = vunk_lexer::lexer().parse(code);
-        assert!(!res.has_errors());
-        let tokens = res.into_output().unwrap();
-        let tokens = tokens.as_slice().spanned((code.len()..code.len()).into());
-        let res = Expr::parser().parse(tokens);
-        assert!(
-            !res.has_errors(),
-            "No errors expected, but found: {:?}",
-            res.errors().collect::<Vec<_>>()
-        );
+    macro_rules! ast_has_no_errs {
+        ($code:ident) => {
+            let res = vunk_lexer::lexer().parse($code);
+            assert!(
+                !res.has_errors(),
+                "Error while tokenizing: {:?}",
+                res.errors().collect::<Vec<_>>()
+            );
+            let tokens = res.into_output().unwrap();
+            let tokens = tokens.as_slice().spanned(($code.len()..$code.len()).into());
+            let res = Expr::parser().parse(tokens);
+            assert!(
+                !res.has_errors(),
+                "No errors expected, but found: {:?}",
+                res.errors().collect::<Vec<_>>()
+            );
+        };
     }
 
     #[test]
     fn test_ast_bool() {
-        ast_has_no_errs("false");
+        let code = "false";
+        ast_has_no_errs!(code);
     }
 
     #[test]
     fn test_ast_int() {
-        ast_has_no_errs("123");
+        let code = "123";
+        ast_has_no_errs!(code);
     }
 
     #[test]
     fn test_ast_ident() {
-        ast_has_no_errs("foobar");
+        let code = "foobar";
+        ast_has_no_errs!(code);
     }
 
     fn decl_has_no_errs(code: &str) {
@@ -563,6 +768,101 @@ mod tests {
         let code = r#"
             1 + 2
         "#;
-        ast_has_no_errs(code);
+        ast_has_no_errs!(code);
+    }
+
+    #[test]
+    fn test_def_var() {
+        let code = r#"
+            foo = 1;
+        "#;
+        ast_has_no_errs!(code);
+    }
+
+    #[test]
+    fn test_def_var_generic() {
+        let code = r#"
+            foo A = A;
+        "#;
+        ast_has_no_errs!(code);
+    }
+
+    #[test]
+    fn test_def_fn() {
+        let code = r#"
+            foo = () -> 1;
+        "#;
+        ast_has_no_errs!(code);
+    }
+
+    #[test]
+    fn test_def_fn_1() {
+        let code = r#"
+            foo = (a: I8) -> a;
+        "#;
+        ast_has_no_errs!(code);
+    }
+
+    #[test]
+    fn test_def_fn_2() {
+        let code = r#"
+            foo = (a: I8) -> a + 1;
+        "#;
+        ast_has_no_errs!(code);
+    }
+
+    #[test]
+    fn test_def_fn_3() {
+        let code = r#"
+            foo = (a: I8) -> if a > 0
+                then a - 1
+                else a;
+        "#;
+        ast_has_no_errs!(code);
+    }
+
+    #[test]
+    fn test_def_fn_4() {
+        let code = r#"
+            foo = (a: I8) -> let
+                    iszero = a > 0;
+                in
+                if iszero
+                then 0
+                else a - 1;
+        "#;
+        ast_has_no_errs!(code);
+    }
+
+    #[test]
+    fn test_def_fn_generic_1() {
+        let code = r#"
+            foo A = (a: A) -> a + 1;
+        "#;
+        ast_has_no_errs!(code);
+    }
+
+    #[test]
+    fn test_def_fn_generic_2() {
+        let code = r#"
+            foo A B = (a: A, b: B) -> a + b;
+        "#;
+        ast_has_no_errs!(code);
+    }
+
+    #[test]
+    fn test_def_rhs() {
+        let code = "true";
+        let res = vunk_lexer::lexer().parse(code);
+        assert!(!res.has_errors());
+        let tokens = res.into_output().unwrap();
+        let tokens = tokens.as_slice().spanned((code.len()..code.len()).into());
+        let expr_parser = Expr::parser();
+        let parse_res = DefRhs::parser(expr_parser).parse(tokens);
+        assert!(
+            !parse_res.has_errors(),
+            "No errors expected, but found: {:?}",
+            parse_res.errors().collect::<Vec<_>>()
+        );
     }
 }
